@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;700&display=swap');
+
+:root {
+  /* Default Lofi/Modern Theme */
+  --bg-color: #121214;
+  --bg-image: url("https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&q=80");
+  --surface-color: rgba(32, 32, 36, 0.6);
+  --surface-color-hover: rgba(45, 45, 50, 0.8);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --text-primary: #f8f8f8;
+  --text-secondary: #a0a0ab;
+  --accent-color: #bb86fc;
+  --accent-color-hover: #9d4edd;
+  --danger-color: #ef4444;
+  --success-color: #10b981;
+  --timer-bg: rgba(0, 0, 0, 0.4);
+  --glass-blur: blur(16px);
+  --border-radius: 16px;
+  --transition-speed: 0.3s;
+}
+
+[data-theme="rain"] {
+  --bg-color: #0b1320;
+  --bg-image: url("https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&q=80");
+  --surface-color: rgba(20, 30, 48, 0.6);
+  --accent-color: #4facfe;
+  --accent-color-hover: #00f2fe;
+}
+
+[data-theme="calm"] {
+  --bg-color: #f0f4f8;
+  --bg-image: url("https://images.unsplash.com/photo-1478147424095-27f1251df8cc?auto=format&fit=crop&q=80");
+  --surface-color: rgba(255, 255, 255, 0.6);
+  --surface-color-hover: rgba(255, 255, 255, 0.8);
+  --border-color: rgba(0, 0, 0, 0.1);
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --accent-color: #4fd1c5;
+  --accent-color-hover: #319795;
+  --timer-bg: rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="night"] {
+  --bg-color: #0b0f19;
+  --bg-image: url("https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=2594&auto=format&fit=crop");
+  --surface-color: rgba(10, 15, 25, 0.6);
+  --accent-color: #f6ad55;
+  --accent-color-hover: #ed8936;
+}
+
+[data-theme="library"] {
+  --bg-color: #2b1d16;
+  --bg-image: url("https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2790&auto=format&fit=crop");
+  --surface-color: rgba(35, 25, 20, 0.8);
+  --accent-color: #d69e2e;
+  --accent-color-hover: #b7791f;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.global-bg-layer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: -1;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.35;
+  transition: background-image 1s ease-in-out;
+  background-image: var(--bg-image);
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  transition: background-color var(--transition-speed);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  transition: all var(--transition-speed) ease;
+}
+
+input {
+  font-family: inherit;
+  outline: none;
+  border: none;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: var(--surface-color);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  transition: all var(--transition-speed);
+}
+
+.glass-panel:hover {
+  background: var(--surface-color-hover);
+}
+
+.primary-btn {
+  background-color: var(--accent-color);
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.primary-btn:hover {
+  background-color: var(--accent-color-hover);
+  transform: translateY(-2px);
+}
+
+.secondary-btn {
+  background-color: transparent;
+  color: var(--text-primary);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+}
+
+.secondary-btn:hover {
+  background-color: var(--surface-color-hover);
+}
