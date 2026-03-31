@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, CheckCircle, Circle, Upload, ChevronRight, ChevronDown } from 'lucide-react';
+import { Plus, CheckCircle, Circle, Upload, ChevronRight, ChevronDown, Trash2 } from 'lucide-react';
 
 type Subtopic = { id: string, title: string, completed: boolean };
 type Topic = { id: string, title: string, completed: boolean, subtopics: Subtopic[] };
@@ -27,6 +27,27 @@ export const Syllabus = () => {
     if (!newSubj.trim()) return;
     setSubjects([...subjects, { id: Date.now().toString(), name: newSubj, topics: [] }]);
     setNewSubj('');
+  };
+
+  const deleteSubject = (subjId: string) => {
+    if (!confirm('Delete this entire subject and all its topics?')) return;
+    setSubjects(subjects.filter(s => s.id !== subjId));
+  };
+
+  const deleteTopic = (subjId: string, topicId: string) => {
+    setSubjects(subjects.map(s =>
+      s.id === subjId ? { ...s, topics: s.topics.filter(t => t.id !== topicId) } : s
+    ));
+  };
+
+  const deleteSubtopic = (subjId: string, topicId: string, subId: string) => {
+    setSubjects(subjects.map(s =>
+      s.id === subjId ? {
+        ...s, topics: s.topics.map(t =>
+          t.id === topicId ? { ...t, subtopics: t.subtopics.filter(st => st.id !== subId) } : t
+        )
+      } : s
+    ));
   };
 
   const addTopic = (subjId: string, topicTitle: string) => {
@@ -167,7 +188,12 @@ export const Syllabus = () => {
             <div key={subj.id} className="glass-panel" style={{ width: 'calc(50% - 0.75rem)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '300px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ fontSize: '1.3rem', fontWeight: 600 }}>{subj.name}</h3>
-                <span style={{ fontSize: '0.85rem', color: progress === 100 ? 'var(--success-color)' : 'var(--text-secondary)', fontWeight: 600 }}>{progress}%</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '0.85rem', color: progress === 100 ? 'var(--success-color)' : 'var(--text-secondary)', fontWeight: 600 }}>{progress}%</span>
+                  <button onClick={() => deleteSubject(subj.id)} title="Delete subject" style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.25rem', borderRadius: '6px', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#ff6b6b')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}>
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
               
               <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
@@ -182,6 +208,8 @@ export const Syllabus = () => {
                     onToggle={() => toggleTopic(subj.id, topic.id)} 
                     onToggleSub={(subId) => toggleSubtopic(subj.id, topic.id, subId)}
                     onAddSub={(title) => addSubtopic(subj.id, topic.id, title)}
+                    onDeleteTopic={() => deleteTopic(subj.id, topic.id)}
+                    onDeleteSub={(subId) => deleteSubtopic(subj.id, topic.id, subId)}
                   />
                 ))}
               </div>
@@ -211,9 +239,11 @@ export const Syllabus = () => {
   );
 };
 
-const TreeView = ({ topic, onToggle, onToggleSub, onAddSub }: { topic: any, onToggle: () => void, onToggleSub: (id: string) => void, onAddSub: (title: string) => void }) => {
+const TreeView = ({ topic, onToggle, onToggleSub, onAddSub, onDeleteTopic, onDeleteSub }: { topic: any, onToggle: () => void, onToggleSub: (id: string) => void, onAddSub: (title: string) => void, onDeleteTopic: () => void, onDeleteSub: (id: string) => void }) => {
   const [expanded, setExpanded] = useState(false);
   const hasSubs = topic.subtopics && topic.subtopics.length > 0;
+
+  const deleteIconStyle: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center', borderRadius: '4px', transition: 'color 0.2s', opacity: 0.6, flexShrink: 0 };
   
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)' }}>
@@ -225,14 +255,22 @@ const TreeView = ({ topic, onToggle, onToggleSub, onAddSub }: { topic: any, onTo
           {topic.completed ? <CheckCircle size={18} color="var(--success-color)" /> : <Circle size={18} color="var(--text-secondary)" />}
           <span style={{ textDecoration: topic.completed ? 'line-through' : 'none', fontWeight: 500, fontSize: '1rem' }}>{topic.title}</span>
         </div>
+        <button onClick={onDeleteTopic} title="Delete topic" style={deleteIconStyle} onMouseEnter={e => (e.currentTarget.style.color = '#ff6b6b')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}>
+          <Trash2 size={14} />
+        </button>
       </div>
 
       {expanded && (
         <div style={{ paddingLeft: '2.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem', borderLeft: '1px dashed rgba(255,255,255,0.1)', marginLeft: '0.75rem' }}>
           {topic.subtopics.map((st: any) => (
-            <div key={st.id} onClick={() => onToggleSub(st.id)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', opacity: st.completed ? 0.5 : 1, padding: '0.25rem 0' }}>
-              {st.completed ? <CheckCircle size={16} color="var(--success-color)" /> : <Circle size={16} color="var(--text-secondary)" />}
-              <span style={{ textDecoration: st.completed ? 'line-through' : 'none', fontSize: '0.9rem' }}>{st.title}</span>
+            <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.25rem 0' }}>
+              <div onClick={() => onToggleSub(st.id)} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', opacity: st.completed ? 0.5 : 1 }}>
+                {st.completed ? <CheckCircle size={16} color="var(--success-color)" /> : <Circle size={16} color="var(--text-secondary)" />}
+                <span style={{ textDecoration: st.completed ? 'line-through' : 'none', fontSize: '0.9rem' }}>{st.title}</span>
+              </div>
+              <button onClick={() => onDeleteSub(st.id)} title="Delete subtopic" style={{ ...deleteIconStyle, opacity: 0.4 }} onMouseEnter={e => { e.currentTarget.style.color = '#ff6b6b'; e.currentTarget.style.opacity = '1'; }} onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.opacity = '0.4'; }}>
+                <Trash2 size={12} />
+              </button>
             </div>
           ))}
           <GenericInput placeholder="Add subtopic..." onAdd={onAddSub} compact />
