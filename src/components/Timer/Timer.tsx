@@ -1,11 +1,69 @@
 import { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw, Clock, Hourglass, StopCircle, Settings as SettingsIcon, X } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+
+const LEADERBOARD_KEY = 'studyfm_leaderboard';
+
+export type LeaderboardEntry = {
+  uid: string;
+  name: string;
+  email: string;
+  focusMinutes: number;
+  sessions: number;
+  lastActive: number; // timestamp
+};
+
+function loadLeaderboard(): LeaderboardEntry[] {
+  try {
+    const stored = localStorage.getItem(LEADERBOARD_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return [];
+}
+
+function saveLeaderboard(entries: LeaderboardEntry[]) {
+  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(entries));
+}
+
+export function updateUserStudyTime(uid: string, name: string, email: string, addedMinutes: number, addedSessions: number) {
+  const entries = loadLeaderboard();
+  const idx = entries.findIndex(e => e.uid === uid);
+  if (idx >= 0) {
+    entries[idx].focusMinutes += addedMinutes;
+    entries[idx].sessions += addedSessions;
+    entries[idx].lastActive = Date.now();
+    entries[idx].name = name; // update if changed
+  } else {
+    entries.push({ uid, name, email, focusMinutes: addedMinutes, sessions: addedSessions, lastActive: Date.now() });
+  }
+  saveLeaderboard(entries);
+}
+
+export function markUserActive(uid: string, name: string, email: string) {
+  const entries = loadLeaderboard();
+  const idx = entries.findIndex(e => e.uid === uid);
+  if (idx >= 0) {
+    entries[idx].lastActive = Date.now();
+    entries[idx].name = name;
+  } else {
+    entries.push({ uid, name, email, focusMinutes: 0, sessions: 0, lastActive: Date.now() });
+  }
+  saveLeaderboard(entries);
+}
 
 type TimerMode = 'pomodoro' | 'countdown' | 'stopwatch';
 type PomoPhase = 'focus' | 'shortBreak' | 'longBreak';
 
 export const Timer = () => {
+  const { user } = useAuth();
   const [mode, setMode] = useState<TimerMode>('pomodoro');
+
+  // Register user on leaderboard when they open the timer
+  useEffect(() => {
+    if (user) {
+      markUserActive(user.uid, user.displayName, user.email);
+    }
+  }, [user]);
   
   // Pomodoro Settings
   const [showSettings, setShowSettings] = useState(false);
@@ -49,6 +107,10 @@ export const Timer = () => {
       if (pomoPhase === 'focus') {
         const newSessions = sessionsCompleted + 1;
         setSessionsCompleted(newSessions);
+        // Track focus time for leaderboard
+        if (user) {
+          updateUserStudyTime(user.uid, user.displayName, user.email, settings.focus, 1);
+        }
         if (newSessions % 4 === 0) {
           setPomoPhase('longBreak');
           setPomoTime(settings.longBreak * 60);
