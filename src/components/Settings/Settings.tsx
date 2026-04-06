@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Bell, Paintbrush } from 'lucide-react';
+import { Bell, Paintbrush, LogIn } from 'lucide-react';
 
 export const Settings = () => {
-  const { user, logout, updateProfile } = useAuth();
+  const { user, logout, updateProfile, setShowAuthModal } = useAuth();
   const [theme, setTheme] = useState('dark');
   const [notifications, setNotifications] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -28,10 +28,15 @@ export const Settings = () => {
         {/* Profile Card */}
         <div className="glass-panel" style={{ flex: 1, minWidth: '300px', padding: '2.5rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', borderRadius: '16px' }}>
           <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: 'linear-gradient(45deg, var(--accent-color), var(--success-color))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', fontWeight: 700, color: '#fff', boxShadow: '0 8px 32px rgba(187, 134, 252, 0.3)' }}>
-            {user?.displayName?.charAt(0).toUpperCase() || 'U'}
+            {user?.displayName?.charAt(0).toUpperCase() || '?'}
           </div>
           <div style={{ textAlign: 'center', width: '100%' }}>
-            {isEditing ? (
+            {!user ? (
+              <>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Not signed in</h3>
+                <p style={{ color: 'var(--text-secondary)', marginTop: '0.4rem', fontSize: '0.95rem' }}>Sign in to save your profile</p>
+              </>
+            ) : isEditing ? (
               <input 
                 type="text" 
                 value={editName}
@@ -40,17 +45,25 @@ export const Settings = () => {
                 autoFocus
               />
             ) : (
-              <h3 style={{ fontSize: '1.6rem', fontWeight: 600 }}>{user?.displayName || 'Student'}</h3>
+              <>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 600 }}>{user.displayName}</h3>
+                <p style={{ color: 'var(--text-secondary)', marginTop: '0.4rem', fontSize: '1.05rem' }}>{user.email}</p>
+              </>
             )}
-            <p style={{ color: 'var(--text-secondary)', marginTop: '0.4rem', fontSize: '1.05rem' }}>{user?.email || 'student@study.fm'}</p>
           </div>
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
-            {isEditing ? (
+            {!user ? (
+              <button className="primary-btn" onClick={() => setShowAuthModal(true)} style={{ width: '100%', padding: '0.85rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                <LogIn size={18} /> Sign In
+              </button>
+            ) : isEditing ? (
               <button className="primary-btn" onClick={handleSaveProfile} style={{ width: '100%', padding: '0.85rem', borderRadius: '12px' }}>Save Changes</button>
             ) : (
-              <button className="secondary-btn" onClick={() => setIsEditing(true)} style={{ width: '100%', padding: '0.85rem', borderRadius: '12px' }}>Edit Profile</button>
+              <>
+                <button className="secondary-btn" onClick={() => setIsEditing(true)} style={{ width: '100%', padding: '0.85rem', borderRadius: '12px' }}>Edit Profile</button>
+                <button className="primary-btn" onClick={logout} style={{ width: '100%', padding: '0.85rem', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger-color)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>Sign Out</button>
+              </>
             )}
-            <button className="primary-btn" onClick={logout} style={{ width: '100%', padding: '0.85rem', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger-color)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>Sign Out</button>
           </div>
         </div>
 

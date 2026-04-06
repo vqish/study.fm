@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   LogOut, Timer, MessageSquare, Music, BookOpen, 
-  FileText, Layers, Trophy, Users, Settings, Target 
+  FileText, Layers, Trophy, Users, Settings, Target, LogIn
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -12,7 +12,7 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
   activeSlide: SlideId, 
   setActiveSlide: (id: SlideId) => void 
 }) => {
-  const { logout } = useAuth();
+  const { user, logout, setShowAuthModal } = useAuth();
   
   const isFocusMode = activeSlide === ('focus' as any);
 
@@ -37,10 +37,8 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
   
   return (
     <div style={styles.container}>
-      {/* Background layer mapped to CSS variables instead of React state */}
       <div className="global-bg-layer" />
       
-      {/* Optional YouTube Video Background Layer */}
       {ytVideoId && (
         <>
           <iframe
@@ -48,7 +46,6 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
             style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', minWidth: '100vw', minHeight: '100vh', width: 'auto', height: 'auto', zIndex: -2, border: 'none', pointerEvents: 'none' }}
             allow="autoplay; encrypted-media"
           />
-          {/* Dark overlay for readability */}
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: -1, pointerEvents: 'none' }} />
         </>
       )}
@@ -75,14 +72,20 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
           <nav style={{ ...styles.nav, marginTop: 'auto' }}>
             <NavItem icon={<Target size={22} color={activeSlide === ('focus' as any) ? '#fff' : 'var(--accent-color)'} />} label="Focus Mode" active={activeSlide === ('focus' as any)} onClick={() => setActiveSlide('focus' as SlideId)} />
             <NavItem icon={<Settings size={22} />} label="Settings Profile" active={activeSlide === 'settings'} onClick={() => setActiveSlide('settings')} />
-            <button onClick={logout} style={styles.logoutBtn} title="Log Out" className="nav-btn logout-btn">
-              <LogOut size={22} color="var(--danger-color)" />
-            </button>
+            
+            {user ? (
+              <button onClick={logout} style={styles.logoutBtn} title="Log Out" className="nav-btn logout-btn">
+                <LogOut size={22} color="var(--danger-color)" />
+              </button>
+            ) : (
+              <button onClick={() => setShowAuthModal(true)} style={{ ...styles.logoutBtn, background: 'rgba(187,134,252,0.1)' }} title="Sign In" className="nav-btn">
+                <LogIn size={22} color="var(--accent-color)" />
+              </button>
+            )}
           </nav>
         </aside>
       )}
 
-      {/* Main Content Area */}
       <main id="main-scroll-area" style={styles.main(isFocusMode)}>
         <div style={styles.contentWrapper}>
           {children}

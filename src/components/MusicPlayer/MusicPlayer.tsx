@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { Music, AlertCircle, Minimize2, Maximize2 } from 'lucide-react';
 
+type SourceType = 'youtube' | 'spotify' | 'none';
+
 export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
   const [url, setUrl] = useState('');
-  const [embedId, setEmbedId] = useState('jfKfPfyJRdk'); // Default to lofi girl
+  const [embedId, setEmbedId] = useState('jfKfPfyJRdk'); // Default lofi girl
+  const [sourceType, setSourceType] = useState<SourceType>('youtube');
+  const [spotifyUri, setSpotifyUri] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
 
   const parseYoutubeUrl = (inputUrl: string) => {
@@ -12,18 +16,42 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
     return (match && match[2].length === 11) ? match[2] : null;
   };
 
+  const parseSpotifyUrl = (inputUrl: string): { type: string, id: string } | null => {
+    // Handles: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
+    // Also: https://open.spotify.com/track/..., /album/...
+    const match = inputUrl.match(/open\.spotify\.com\/(playlist|track|album|episode|show)\/([a-zA-Z0-9]+)/);
+    if (match) return { type: match[1], id: match[2] };
+    return null;
+  };
+
   const handleLoad = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url) {
+    if (!url.trim()) {
+      setEmbedId('');
+      setSpotifyUri('');
+      setSourceType('none');
+      return;
+    }
+
+    // Try Spotify first
+    const spotify = parseSpotifyUrl(url);
+    if (spotify) {
+      setSpotifyUri(`https://open.spotify.com/embed/${spotify.type}/${spotify.id}?utm_source=generator&theme=0`);
+      setSourceType('spotify');
       setEmbedId('');
       return;
     }
-    const id = parseYoutubeUrl(url);
-    if (id) {
-      setEmbedId(id);
-    } else {
-      alert("Please enter a valid YouTube link.");
+
+    // Try YouTube
+    const ytId = parseYoutubeUrl(url);
+    if (ytId) {
+      setEmbedId(ytId);
+      setSourceType('youtube');
+      setSpotifyUri('');
+      return;
     }
+
+    alert("Paste a valid YouTube or Spotify link.");
   };
 
   if (isMinimized && isFocus) {
@@ -37,7 +65,7 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
           <Maximize2 size={16} />
         </button>
         {/* Hidden but playing iframe */}
-        {embedId && (
+        {sourceType === 'youtube' && embedId && (
           <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px', overflow: 'hidden' }}>
             <iframe src={`https://www.youtube.com/embed/${embedId}?autoplay=1`} allow="autoplay" />
           </div>
@@ -55,12 +83,19 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
         </button>
       )}
 
+      {!isFocus && (
+        <div>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Music & Ambience</h2>
+          <p style={{ color: 'var(--text-secondary)' }}>Paste a YouTube or Spotify link to set your study vibe.</p>
+        </div>
+      )}
+
       <form onSubmit={handleLoad} style={{ display: 'flex', gap: '0.75rem' }}>
         <div style={{ flex: 1, position: 'relative' }}>
           <Music size={18} color="var(--text-secondary)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
           <input 
             type="text" 
-            placeholder="Paste YouTube link (e.g. lofi hip hop radio)"
+            placeholder="Paste YouTube or Spotify link..."
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             style={{ 
@@ -79,8 +114,38 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
         </button>
       </form>
 
-      <div style={{ flex: 1, borderRadius: '14px', overflow: 'hidden', background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' }}>
-        {embedId ? (
+      {/* Quick Presets */}
+      {!isFocus && (
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {[
+            { label: '🎵 Lofi Girl', id: 'jfKfPfyJRdk', type: 'youtube' as const },
+            { label: '🌧️ Rain Sounds', id: 'mPZkdNFkNps', type: 'youtube' as const },
+            { label: '☕ Jazz Cafe', id: 'VMAPTo7RVCo', type: 'youtube' as const },
+            { label: '🌌 Space Ambient', id: '2J5xnQVaYPo', type: 'youtube' as const },
+          ].map(preset => (
+            <button 
+              key={preset.id}
+              onClick={() => { setEmbedId(preset.id); setSourceType('youtube'); setSpotifyUri(''); }}
+              style={{ 
+                padding: '0.5rem 1rem', 
+                borderRadius: '20px', 
+                background: embedId === preset.id ? 'var(--accent-color)' : 'rgba(255,255,255,0.06)', 
+                border: '1px solid rgba(255,255,255,0.1)', 
+                color: embedId === preset.id ? '#fff' : 'var(--text-secondary)', 
+                cursor: 'pointer', 
+                fontSize: '0.85rem', 
+                fontWeight: 500,
+                transition: 'all 0.2s' 
+              }}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div style={{ flex: 1, borderRadius: '14px', overflow: 'hidden', background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)', minHeight: isFocus ? '180px' : '300px' }}>
+        {sourceType === 'youtube' && embedId ? (
           <iframe
             width="100%"
             height="100%"
@@ -88,13 +153,25 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
             frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
-            title="Embedded youtube"
+            title="YouTube Music"
             style={{ border: 'none' }}
+          />
+        ) : sourceType === 'spotify' && spotifyUri ? (
+          <iframe
+            src={spotifyUri}
+            width="100%"
+            height="100%"
+            frameBorder="0"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
+            title="Spotify Player"
+            style={{ border: 'none', borderRadius: '14px' }}
           />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--text-secondary)', gap: '0.75rem' }}>
             <AlertCircle size={36} opacity={0.5} color="var(--accent-color)" />
-            <p style={{ fontWeight: 500 }}>No video loaded</p>
+            <p style={{ fontWeight: 500 }}>No media loaded</p>
+            <p style={{ fontSize: '0.85rem', opacity: 0.6 }}>Supports YouTube & Spotify links</p>
           </div>
         )}
       </div>
