@@ -1,66 +1,117 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Bell, Paintbrush, LogIn } from 'lucide-react';
+import { Bell, Paintbrush, LogIn, MapPin, GraduationCap, Save, X as CloseIcon } from 'lucide-react';
+import { db } from '../../utils/db';
 
 export const Settings = () => {
-  const { user, logout, updateProfile, setShowAuthModal } = useAuth();
+  const { user, logout, syncProfile, setShowAuthModal } = useAuth();
   const [theme, setTheme] = useState('dark');
   const [notifications, setNotifications] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(user?.displayName || '');
+  
+  const [profile, setProfile] = useState({
+    displayName: user?.displayName || '',
+    country: user?.country || '',
+    major: user?.major || ''
+  });
 
-  const handleSaveProfile = () => {
-    if (editName.trim()) {
-      updateProfile(editName);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        displayName: user.displayName || '',
+        country: user.country || '',
+        major: user.major || ''
+      });
     }
-    setIsEditing(false);
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setIsSaving(true);
+    try {
+      await syncProfile({
+        uid: user.uid,
+        displayName: profile.displayName,
+        country: profile.country,
+        major: profile.major
+      });
+      setIsEditing(false);
+    } catch (err) {
+      alert("Failed to update profile. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', gap: '2rem' }}>
       <div>
         <h2 style={{ fontSize: '1.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Profile & Settings</h2>
-        <p style={{ color: 'var(--text-secondary)' }}>Manage your account preferences and application layout.</p>
+        <p style={{ color: 'var(--text-secondary)' }}>Manage your account preferences and study bio.</p>
       </div>
 
-      <div style={{ display: 'flex', gap: '2rem', flex: 1, overflowY: 'auto', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '2rem', flex: 1, overflowY: 'auto', flexWrap: 'wrap', alignContent: 'flex-start', paddingBottom: '2rem' }}>
         
         {/* Profile Card */}
-        <div className="glass-panel" style={{ flex: 1, minWidth: '300px', padding: '2.5rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', borderRadius: '16px' }}>
-          <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: 'linear-gradient(45deg, var(--accent-color), var(--success-color))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', fontWeight: 700, color: '#fff', boxShadow: '0 8px 32px rgba(187, 134, 252, 0.3)' }}>
-            {user?.displayName?.charAt(0).toUpperCase() || '?'}
-          </div>
-          <div style={{ textAlign: 'center', width: '100%' }}>
-            {!user ? (
-              <>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Not signed in</h3>
-                <p style={{ color: 'var(--text-secondary)', marginTop: '0.4rem', fontSize: '0.95rem' }}>Sign in to save your profile</p>
-              </>
-            ) : isEditing ? (
-              <input 
-                type="text" 
-                value={editName}
-                onChange={e => setEditName(e.target.value)}
-                style={{ fontSize: '1.4rem', fontWeight: 600, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '8px', padding: '0.5rem', textAlign: 'center', width: '100%', marginBottom: '0.5rem' }}
-                autoFocus
-              />
+        <div className="glass-panel" style={{ flex: 1, minWidth: '350px', padding: '2.5rem 2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', borderRadius: '24px', position: 'relative' }}>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ width: '110px', height: '110px', borderRadius: '50%', background: 'linear-gradient(45deg, var(--accent-color), #03DAC6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 800, color: '#fff', boxShadow: '0 8px 32px rgba(187, 134, 252, 0.3)' }}>
+              {profile.displayName.charAt(0).toUpperCase() || '?'}
+            </div>
+            
+            {isEditing ? (
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={styles.inputGroup}>
+                   <label style={styles.label}>Full Name</label>
+                   <input type="text" value={profile.displayName} onChange={e => setProfile({...profile, displayName: e.target.value})} style={styles.input} />
+                </div>
+                <div style={styles.inputGroup}>
+                   <label style={styles.label}>Country</label>
+                   <input type="text" value={profile.country} onChange={e => setProfile({...profile, country: e.target.value})} style={styles.input} />
+                </div>
+                <div style={styles.inputGroup}>
+                   <label style={styles.label}>Major / Topic</label>
+                   <input type="text" value={profile.major} onChange={e => setProfile({...profile, major: e.target.value})} style={styles.input} />
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                  <button className="primary-btn" onClick={handleSaveProfile} disabled={isSaving} style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    {isSaving ? 'Saving...' : <><Save size={18} /> Save</>}
+                  </button>
+                  <button className="secondary-btn" onClick={() => setIsEditing(false)} style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    <CloseIcon size={18} /> Cancel
+                  </button>
+                </div>
+              </div>
             ) : (
-              <>
-                <h3 style={{ fontSize: '1.6rem', fontWeight: 600 }}>{user.displayName}</h3>
-                <p style={{ color: 'var(--text-secondary)', marginTop: '0.4rem', fontSize: '1.05rem' }}>{user.email}</p>
-              </>
+              <div style={{ textAlign: 'center' }}>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{user ? profile.displayName : 'Guest Student'}</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '0.25rem' }}>{user?.email || 'Sign in to access cloud features'}</p>
+                
+                {user && (
+                   <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '1.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                        <MapPin size={16} color="var(--accent-color)" /> {profile.country || 'Not set'}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                        <GraduationCap size={16} color="var(--accent-color)" /> {profile.major || 'Not set'}
+                      </div>
+                   </div>
+                )}
+              </div>
             )}
           </div>
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
+
+          <div style={{ width: '100%', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {!user ? (
-              <button className="primary-btn" onClick={() => setShowAuthModal(true)} style={{ width: '100%', padding: '0.85rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                <LogIn size={18} /> Sign In
-              </button>
-            ) : isEditing ? (
-              <button className="primary-btn" onClick={handleSaveProfile} style={{ width: '100%', padding: '0.85rem', borderRadius: '12px' }}>Save Changes</button>
-            ) : (
+               <button className="primary-btn" onClick={() => setShowAuthModal(true)} style={{ width: '100%', padding: '1rem', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem' }}>
+                 <LogIn size={20} /> Sign In to Study FM
+               </button>
+            ) : !isEditing && (
               <>
-                <button className="secondary-btn" onClick={() => setIsEditing(true)} style={{ width: '100%', padding: '0.85rem', borderRadius: '12px' }}>Edit Profile</button>
+                <button className="secondary-btn" onClick={() => setIsEditing(true)} style={{ width: '100%', padding: '0.85rem', borderRadius: '12px' }}>Update Profile Details</button>
                 <button className="primary-btn" onClick={logout} style={{ width: '100%', padding: '0.85rem', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger-color)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>Sign Out</button>
               </>
             )}
@@ -68,39 +119,45 @@ export const Settings = () => {
         </div>
 
         {/* Settings Toggles */}
-        <div className="glass-panel" style={{ flex: 2, minWidth: '400px', padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '2.5rem', borderRadius: '16px' }}>
-          
+        <div className="glass-panel" style={{ flex: 1.5, minWidth: '400px', padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '2.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <div>
-            <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.25rem', marginBottom: '1.25rem', color: 'var(--accent-color)', fontWeight: 600 }}><Paintbrush size={22} /> Appearance</h4>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.2rem', marginBottom: '1.5rem', color: 'var(--accent-color)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}><Paintbrush size={20} /> Appearance</h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <div>
-                <p style={{ fontWeight: 500, fontSize: '1.05rem' }}>Global Base Theme</p>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Choose structural visual brightness</p>
+                <p style={{ fontWeight: 700, fontSize: '1rem' }}>Global Theme</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Switch between dark and light interface modes.</p>
               </div>
-              <select value={theme} onChange={e=>setTheme(e.target.value)} style={{ padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '10px', outline: 'none', cursor: 'pointer', fontSize: '0.95rem' }}>
-                <option value="dark">Dark UI</option>
-                <option value="light">Light UI (Beta)</option>
+              <select value={theme} onChange={e=>setTheme(e.target.value)} style={styles.select}>
+                <option value="dark">Focused Dark</option>
+                <option value="light">Solarized Light</option>
               </select>
             </div>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.75rem', paddingLeft: '0.5rem', fontStyle: 'italic' }}>* Use the main navigation header to switch your actual aesthetic live background.</p>
           </div>
 
           <div>
-            <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.25rem', marginBottom: '1.25rem', color: 'var(--accent-color)', fontWeight: 600 }}><Bell size={22} /> Notifications</h4>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.2rem', marginBottom: '1.5rem', color: 'var(--accent-color)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}><Bell size={20} /> Alerts</h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
                <div>
-                <p style={{ fontWeight: 500, fontSize: '1.05rem' }}>Push Notifications</p>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Timer alerts and chat mention sounds</p>
+                <p style={{ fontWeight: 700, fontSize: '1rem' }}>Study Notifications</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Timer alerts and chat mention sounds.</p>
               </div>
-              <button onClick={() => setNotifications(!notifications)} style={{ width: '56px', height: '30px', borderRadius: '15px', background: notifications ? 'var(--accent-color)' : 'rgba(255,255,255,0.1)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'background 0.3s' }}>
-                <div style={{ width: '24px', height: '24px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: notifications ? '29px' : '3px', transition: 'left 0.3s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }} />
+              <button onClick={() => setNotifications(!notifications)} style={{ ...styles.toggle, background: notifications ? 'var(--accent-color)' : 'rgba(255,255,255,0.1)' }}>
+                <div style={{ ...styles.toggleCircle, left: notifications ? '29px' : '3px' }} />
               </button>
             </div>
           </div>
-
         </div>
 
       </div>
     </div>
   );
+};
+
+const styles = {
+  inputGroup: { display: 'flex', flexDirection: 'column' as const, gap: '0.4rem' },
+  label: { fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '1px' },
+  input: { background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '12px', padding: '0.85rem 1rem', outline: 'none', transition: 'border-color 0.2s' },
+  select: { padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '10px', outline: 'none', cursor: 'pointer' },
+  toggle: { width: '56px', height: '30px', borderRadius: '15px', position: 'relative' as const, border: 'none', cursor: 'pointer', transition: 'background 0.3s' },
+  toggleCircle: { width: '24px', height: '24px', background: '#fff', borderRadius: '50%', position: 'absolute' as const, top: '3px', transition: 'left 0.3s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }
 };

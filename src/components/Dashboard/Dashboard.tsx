@@ -8,6 +8,7 @@ import { Flashcards } from '../Flashcards/Flashcards';
 import { Leaderboard } from '../Leaderboard/Leaderboard';
 import { Community } from '../Community/Community';
 import { Settings } from '../Settings/Settings';
+import { StudyAnalytics } from '../Analytics/StudyAnalytics';
 import { Quotes } from '../Focus/Quotes';
 import type { SlideId } from '../Layout/AppLayout';
 import { Minimize, Image as ImageIcon } from 'lucide-react';
@@ -20,8 +21,6 @@ export const Dashboard = ({ activeSlide, setActiveSlide }: { activeSlide: SlideI
 
   const isFocus = activeSlide === 'focus';
 
-  // Render all main features so their internal state (like music iframe or countdown) persists
-  // We strictly use CSS display logic to show/hide without unmounting.
   return (
     <div style={{ width: '100%', height: '100%', flex: 1, position: 'relative' }}>
       
@@ -37,7 +36,7 @@ export const Dashboard = ({ activeSlide, setActiveSlide }: { activeSlide: SlideI
         <Timer />
       </div>
 
-      {/* 2. Rooms (Doesn't use slideCard layout, uses split screen) */}
+      {/* 2. Rooms */}
       <div style={{ display: activeSlide === 'rooms' ? 'flex' : 'none', gap: '1.5rem', height: 'calc(100vh - 2rem)', paddingBottom: '2rem' }}>
         <div className="slide-content glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
           <RoomManager />
@@ -47,12 +46,11 @@ export const Dashboard = ({ activeSlide, setActiveSlide }: { activeSlide: SlideI
         </div>
       </div>
 
-      {/* 3. Media: Persisted always, visible in media tab and focus mode */}
+      {/* 3. Media */}
       <div 
         className={isFocus ? "" : "slide-content glass-panel"} 
         style={{ 
           ...styles.slideCard, 
-          // Always render, but visibly hide if not media or focus. 
           display: activeSlide === 'media' || isFocus ? 'flex' : 'none',
           ...(isFocus ? { position: 'absolute', bottom: '2rem', right: '2rem', width: 'calc(35% - 4rem)', height: 'auto', padding: '1.25rem', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', zIndex: 10 } : {})
         }}
@@ -61,11 +59,9 @@ export const Dashboard = ({ activeSlide, setActiveSlide }: { activeSlide: SlideI
         <MusicPlayer isFocus={isFocus} />
       </div>
 
-      {/* Focus Mode ONLY Overlay Controls (Right 35%) */}
+      {/* Focus Mode ONLY Overlay */}
       {isFocus && (
         <div style={{ position: 'absolute', top: 0, right: 0, width: '35%', height: '100%', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', zIndex: 5 }}>
-          
-          {/* Header Action */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.25rem' }}>
             <button 
               onClick={() => setActiveSlide('timer')}
@@ -77,43 +73,18 @@ export const Dashboard = ({ activeSlide, setActiveSlide }: { activeSlide: SlideI
               <Minimize size={20} /> Exit Focus Mode
             </button>
           </div>
-          
-          {/* Atmosphere Settings */}
           <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', zIndex: 10 }}>
             <h3 style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <ImageIcon size={14} /> Atmosphere
             </h3>
-            
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                <button onClick={() => changeTheme('default')} style={styles.themeBtn}>Lo-Fi</button>
                <button onClick={() => changeTheme('rain')} style={styles.themeBtn}>Rain</button>
                <button onClick={() => changeTheme('night')} style={styles.themeBtn}>Night</button>
                <button onClick={() => changeTheme('library')} style={styles.themeBtn}>Library</button>
             </div>
-
-            {/* Placeholder for YouTube Video Input (implemented via Context next) */}
-            <div style={{ marginTop: '0.25rem' }}>
-              <input 
-                type="text" 
-                placeholder="Paste YouTube Link for Background..." 
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val.includes('youtube.com') || val.includes('youtu.be')) {
-                    // Trigger custom YT background
-                    document.documentElement.setAttribute('data-yt-bg', val);
-                    const event = new CustomEvent('yt-bg-change', { detail: val });
-                    window.dispatchEvent(event);
-                  }
-                }}
-                style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '0.9rem', outline: 'none', transition: 'border 0.2s' }} 
-                onFocus={e => e.target.style.borderColor = 'var(--accent-color)'}
-                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-              />
-            </div>
           </div>
-
           <Quotes />
-
         </div>
       )}
 
@@ -142,7 +113,12 @@ export const Dashboard = ({ activeSlide, setActiveSlide }: { activeSlide: SlideI
         <Community />
       </div>
 
-      {/* 9. Settings */}
+      {/* 9. Analytics */}
+      <div style={{ ...styles.slideCard, display: activeSlide === 'analytics' ? 'flex' : 'none' }} className="slide-content glass-panel">
+        <StudyAnalytics />
+      </div>
+
+      {/* 10. Settings */}
       <div style={{ ...styles.slideCard, display: activeSlide === 'settings' ? 'flex' : 'none' }} className="slide-content glass-panel">
         <Settings />
       </div>

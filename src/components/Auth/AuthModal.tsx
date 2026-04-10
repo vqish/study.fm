@@ -1,25 +1,39 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Headphones, X, Mail, Loader2 } from 'lucide-react';
+import { Headphones, X, Mail, Loader2, User, Globe, GraduationCap, Lock } from 'lucide-react';
 
 export const AuthModal = ({ onClose }: { onClose: () => void }) => {
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [country, setCountry] = useState('');
+  const [major, setMajor] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState('');
-  const { login, loginWithGoogle } = useAuth();
+  
+  const { login, signup, loginWithGoogle } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
+    if (!isLogin && (!name || !country || !major)) {
+      setError('Please fill in all profile fields');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     try {
-      await login(email, password);
+      if (isLogin) {
+        await login(email, password);
+      } else {
+        await signup({ name, email, password, country, major });
+      }
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.');
+      setError(err.message || 'Action failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -46,17 +60,17 @@ export const AuthModal = ({ onClose }: { onClose: () => void }) => {
         </button>
 
         <div style={styles.header}>
-          <Headphones size={36} color="var(--accent-color)" />
-          <h2 style={{ marginTop: '0.75rem', fontSize: '1.8rem', fontWeight: 700 }}>study.fm</h2>
+          <Headphones size={42} color="var(--accent-color)" />
+          <h2 style={{ marginTop: '0.75rem', fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.5px' }}>study.fm</h2>
           <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem', fontSize: '0.95rem' }}>
-            {isLogin ? 'Sign in to join rooms & collaborate' : 'Create your study account'}
+            {isLogin ? 'Welcome back, student!' : 'Join the global study community'}
           </p>
         </div>
 
         {/* Google Login */}
         <button 
           onClick={handleGoogleLogin} 
-          disabled={isGoogleLoading}
+          disabled={isGoogleLoading || isLoading}
           style={styles.googleBtn}
           onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.95)')}
           onMouseOut={e => (e.currentTarget.style.background = '#fff')}
@@ -72,18 +86,58 @@ export const AuthModal = ({ onClose }: { onClose: () => void }) => {
             </svg>
           )}
           <span style={{ color: '#333', fontWeight: 600, fontSize: '0.95rem' }}>
-            Continue with Google
+            {isLogin ? 'Sign in with Google' : 'Sign up with Google'}
           </span>
         </button>
 
         <div style={styles.divider}>
-          <span style={{ background: 'var(--surface-color)', padding: '0 1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>or</span>
+          <span style={{ background: 'var(--surface-color)', padding: '0 1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>or use email</span>
         </div>
 
-        {/* Email Login */}
+        {/* Auth Form */}
         <form onSubmit={handleSubmit} style={styles.form}>
+          {!isLogin && (
+            <>
+              <div style={styles.inputWrapper}>
+                <User size={18} style={styles.inputIcon} />
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  style={styles.input}
+                  required
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div style={{ ...styles.inputWrapper, flex: 1 }}>
+                  <Globe size={18} style={styles.inputIcon} />
+                  <input
+                    type="text"
+                    placeholder="Country"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    style={{ ...styles.input, paddingLeft: '2.5rem' }}
+                    required
+                  />
+                </div>
+                <div style={{ ...styles.inputWrapper, flex: 1 }}>
+                  <GraduationCap size={18} style={styles.inputIcon} />
+                  <input
+                    type="text"
+                    placeholder="Major"
+                    value={major}
+                    onChange={(e) => setMajor(e.target.value)}
+                    style={{ ...styles.input, paddingLeft: '2.5rem' }}
+                    required
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
           <div style={styles.inputWrapper}>
-            <Mail size={18} style={{ color: 'var(--text-secondary)', position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
+            <Mail size={18} style={styles.inputIcon} />
             <input
               type="email"
               placeholder="Email address"
@@ -93,30 +147,37 @@ export const AuthModal = ({ onClose }: { onClose: () => void }) => {
               required
             />
           </div>
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ ...styles.input, paddingLeft: '1rem' }}
-            required
-            minLength={6}
-          />
+
+          <div style={styles.inputWrapper}>
+            <Lock size={18} style={styles.inputIcon} />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={styles.input}
+              required
+              minLength={6}
+            />
+          </div>
 
           {error && (
-            <p style={{ color: 'var(--danger-color)', fontSize: '0.85rem', textAlign: 'center' }}>{error}</p>
+            <p style={{ color: 'var(--danger-color)', fontSize: '0.85rem', textAlign: 'center', marginTop: '0.25rem' }}>{error}</p>
           )}
           
-          <button type="submit" className="primary-btn" disabled={isLoading} style={styles.submitBtn}>
-            {isLoading ? <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> : (isLogin ? 'Log In' : 'Create Account')}
+          <button type="submit" className="primary-btn" disabled={isLoading || isGoogleLoading} style={styles.submitBtn}>
+            {isLoading ? <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
         </form>
 
         <p style={styles.toggleText}>
           {isLogin ? "Don't have an account? " : "Already have an account? "}
           <span 
-            style={{ color: 'var(--accent-color)', cursor: 'pointer', fontWeight: 600 }}
-            onClick={() => setIsLogin(!isLogin)}
+            style={{ color: 'var(--accent-color)', cursor: 'pointer', fontWeight: 600, textDecoration: 'underline' }}
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError('');
+            }}
           >
             {isLogin ? 'Sign up' : 'Log in'}
           </span>
@@ -124,7 +185,7 @@ export const AuthModal = ({ onClose }: { onClose: () => void }) => {
 
         <style>{`
           @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-          @keyframes modalSlideIn { from { opacity: 0; transform: scale(0.92) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+          @keyframes modalSlideIn { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         `}</style>
       </div>
     </div>
@@ -135,8 +196,8 @@ const styles = {
   overlay: {
     position: 'fixed' as const,
     inset: 0,
-    background: 'rgba(0, 0, 0, 0.7)',
-    backdropFilter: 'blur(8px)',
+    background: 'rgba(0, 0, 0, 0.75)',
+    backdropFilter: 'blur(10px)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -147,29 +208,31 @@ const styles = {
     position: 'relative' as const,
     padding: '2.5rem',
     width: '100%',
-    maxWidth: '420px',
+    maxWidth: '440px',
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
-    boxShadow: '0 25px 60px -12px rgba(0, 0, 0, 0.6)',
-    animation: 'modalSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+    boxShadow: '0 25px 60px -12px rgba(0, 0, 0, 0.8)',
+    animation: 'modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+    borderRadius: '24px',
   },
   closeBtn: {
     position: 'absolute' as const,
-    top: '1rem',
-    right: '1rem',
+    top: '1.25rem',
+    right: '1.25rem',
     background: 'rgba(255,255,255,0.05)',
     border: 'none',
     color: 'var(--text-secondary)',
-    borderRadius: '8px',
+    borderRadius: '10px',
     padding: '0.5rem',
     cursor: 'pointer',
     display: 'flex',
+    transition: 'all 0.2s',
   },
   header: {
     textAlign: 'center' as const,
     width: '100%',
-    marginBottom: '1.5rem',
+    marginBottom: '2rem',
   },
   googleBtn: {
     display: 'flex',
@@ -177,54 +240,64 @@ const styles = {
     justifyContent: 'center',
     gap: '0.75rem',
     width: '100%',
-    padding: '0.85rem',
-    borderRadius: '10px',
+    padding: '0.9rem',
+    borderRadius: '12px',
     background: '#fff',
     border: 'none',
     cursor: 'pointer',
     transition: 'all 0.2s',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
   },
   divider: {
     width: '100%',
     textAlign: 'center' as const,
     borderBottom: '1px solid rgba(255,255,255,0.1)',
     lineHeight: '0.1em',
-    margin: '1.5rem 0',
+    margin: '1.75rem 0',
   },
   form: {
     display: 'flex',
     flexDirection: 'column' as const,
     width: '100%',
-    gap: '0.85rem',
+    gap: '1rem',
   },
   inputWrapper: {
     position: 'relative' as const,
     display: 'flex',
     alignItems: 'center',
   },
+  inputIcon: {
+    color: 'var(--text-secondary)',
+    position: 'absolute' as const,
+    left: '1rem',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    opacity: 0.7,
+  },
   input: {
     width: '100%',
-    padding: '0.95rem 1rem 0.95rem 2.75rem',
-    borderRadius: '10px',
-    background: 'rgba(0, 0, 0, 0.25)',
-    border: '1px solid rgba(255,255,255,0.08)',
+    padding: '0.85rem 1rem 0.85rem 2.75rem',
+    borderRadius: '12px',
+    background: 'rgba(0, 0, 0, 0.3)',
+    border: '1px solid rgba(255,255,255,0.1)',
     color: 'var(--text-primary)',
     fontSize: '0.95rem',
-    transition: 'border-color 0.2s',
+    transition: 'all 0.2s',
     outline: 'none',
   },
   submitBtn: {
-    padding: '0.95rem',
+    padding: '1rem',
     fontSize: '1rem',
-    borderRadius: '10px',
+    fontWeight: 600,
+    borderRadius: '12px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 4px 14px 0 rgba(187, 134, 252, 0.3)',
+    marginTop: '0.5rem',
+    boxShadow: '0 8px 20px rgba(187, 134, 252, 0.3)',
   },
   toggleText: {
-    marginTop: '1.5rem',
+    marginTop: '1.75rem',
     color: 'var(--text-secondary)',
     fontSize: '0.9rem',
   }

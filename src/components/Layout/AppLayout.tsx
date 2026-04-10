@@ -1,18 +1,19 @@
 import React from 'react';
 import { 
-  LogOut, Timer, MessageSquare, Music, BookOpen, 
-  FileText, Layers, Trophy, Users, Settings, Target, LogIn
+  LogOut, Timer as TimerIcon, MessageSquare, Music, BookOpen, 
+  FileText, Layers, Trophy, Users, Settings, Target, BarChart3
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { Navbar } from './Navbar';
 
-export type SlideId = 'timer' | 'rooms' | 'media' | 'syllabus' | 'notes' | 'flashcards' | 'leaderboard' | 'community' | 'settings' | 'focus';
+export type SlideId = 'timer' | 'rooms' | 'media' | 'syllabus' | 'notes' | 'flashcards' | 'leaderboard' | 'community' | 'settings' | 'focus' | 'analytics';
 
 export const AppLayout = ({ children, activeSlide, setActiveSlide }: { 
   children: React.ReactNode, 
   activeSlide: SlideId, 
   setActiveSlide: (id: SlideId) => void 
 }) => {
-  const { user, logout, setShowAuthModal } = useAuth();
+  const { user, logout } = useAuth();
   
   const isFocusMode = activeSlide === ('focus' as any);
 
@@ -59,12 +60,13 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
           </div>
 
           <nav style={styles.nav}>
-            <NavItem icon={<Timer size={22} />} label="Focus Timer" active={activeSlide === 'timer'} onClick={() => setActiveSlide('timer')} />
+            <NavItem icon={<TimerIcon size={22} />} label="Focus Timer" active={activeSlide === 'timer'} onClick={() => setActiveSlide('timer')} />
             <NavItem icon={<MessageSquare size={22} />} label="Study Rooms" active={activeSlide === 'rooms'} onClick={() => setActiveSlide('rooms')} />
             <NavItem icon={<Music size={22} />} label="Music & Background" active={activeSlide === 'media'} onClick={() => setActiveSlide('media')} />
             <NavItem icon={<BookOpen size={22} />} label="Task Planner" active={activeSlide === 'syllabus'} onClick={() => setActiveSlide('syllabus')} />
             <NavItem icon={<FileText size={22} />} label="Rich Notes" active={activeSlide === 'notes'} onClick={() => setActiveSlide('notes')} />
             <NavItem icon={<Layers size={22} />} label="Flashcards" active={activeSlide === 'flashcards'} onClick={() => setActiveSlide('flashcards')} />
+            <NavItem icon={<BarChart3 size={22} />} label="Study Analytics" active={activeSlide === 'analytics'} onClick={() => setActiveSlide('analytics')} />
             <NavItem icon={<Trophy size={22} />} label="Leaderboard" active={activeSlide === 'leaderboard'} onClick={() => setActiveSlide('leaderboard')} />
             <NavItem icon={<Users size={22} />} label="Community" active={activeSlide === 'community'} onClick={() => setActiveSlide('community')} />
           </nav>
@@ -73,24 +75,23 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
             <NavItem icon={<Target size={22} color={activeSlide === ('focus' as any) ? '#fff' : 'var(--accent-color)'} />} label="Focus Mode" active={activeSlide === ('focus' as any)} onClick={() => setActiveSlide('focus' as SlideId)} />
             <NavItem icon={<Settings size={22} />} label="Settings Profile" active={activeSlide === 'settings'} onClick={() => setActiveSlide('settings')} />
             
-            {user ? (
+            {user && (
               <button onClick={logout} style={styles.logoutBtn} title="Log Out" className="nav-btn logout-btn">
                 <LogOut size={22} color="var(--danger-color)" />
-              </button>
-            ) : (
-              <button onClick={() => setShowAuthModal(true)} style={{ ...styles.logoutBtn, background: 'rgba(187,134,252,0.1)' }} title="Sign In" className="nav-btn">
-                <LogIn size={22} color="var(--accent-color)" />
               </button>
             )}
           </nav>
         </aside>
       )}
 
-      <main id="main-scroll-area" style={styles.main(isFocusMode)}>
-        <div style={styles.contentWrapper}>
-          {children}
-        </div>
-      </main>
+      <div style={styles.mainWrapper}>
+        {!isFocusMode && <Navbar />}
+        <main id="main-scroll-area" style={styles.main(isFocusMode)}>
+          <div style={styles.contentWrapper}>
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
@@ -150,6 +151,8 @@ const styles = {
     height: '48px',
     borderRadius: '14px',
     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    border: 'none',
+    cursor: 'pointer',
   },
   logoutBtn: {
     display: 'flex',
@@ -160,13 +163,21 @@ const styles = {
     borderRadius: '14px',
     transition: 'all 0.3s',
     background: 'rgba(239, 68, 68, 0.05)',
+    border: 'none',
+    cursor: 'pointer',
+  },
+  mainWrapper: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    height: '100vh',
+    position: 'relative' as const,
   },
   main: (isFocusMode: boolean) => ({
     flex: 1,
-    height: '100vh',
     overflowY: 'auto' as const,
     overflowX: 'hidden' as const,
-    padding: isFocusMode ? '0' : '1rem',
+    padding: isFocusMode ? '0' : '1rem 2rem 2rem 2rem',
     transition: 'padding 0.4s ease',
   }),
   contentWrapper: {

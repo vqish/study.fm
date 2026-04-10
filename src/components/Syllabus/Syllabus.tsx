@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, CheckCircle, Circle, Upload, ChevronRight, ChevronDown, Trash2 } from 'lucide-react';
+import { Plus, CheckCircle, Circle, Upload, ChevronRight, ChevronDown, Trash2, Play, Pause } from 'lucide-react';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 
 type SubSubtopic = { id: string, title: string, completed: boolean };
 type Subtopic = { id: string, title: string, completed: boolean, children: SubSubtopic[] };
@@ -9,6 +10,7 @@ type Subject = { id: string, name: string, topics: Topic[] };
 const uid = () => Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
 
 export const Syllabus = () => {
+  const { activeTopic, startStudying, stopStudying } = useAnalytics();
   const [subjects, setSubjects] = useState<Subject[]>([
     { 
       id: '1', 
@@ -209,9 +211,7 @@ export const Syllabus = () => {
         )}
       </div>
 
-      {/* Main Subjects Grid */}
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignContent: 'flex-start', paddingBottom: '2rem' }}>
-        
         {subjects.map(subj => {
           const leaf = calcLeafCount([subj]);
           const progress = leaf.total === 0 ? 0 : Math.round((leaf.comp / leaf.total) * 100);
@@ -219,7 +219,13 @@ export const Syllabus = () => {
           return (
             <div key={subj.id} className="glass-panel" style={{ width: 'calc(50% - 0.75rem)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '300px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1.3rem', fontWeight: 600 }}>{subj.name}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                   <PlayButton 
+                    isActive={activeTopic?.id === subj.id} 
+                    onClick={() => activeTopic?.id === subj.id ? stopStudying() : startStudying({ id: subj.id, name: subj.name, subjectName: subj.name })} 
+                   />
+                   <h3 style={{ fontSize: '1.3rem', fontWeight: 600 }}>{subj.name}</h3>
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <span style={{ fontSize: '0.85rem', color: progress === 100 ? 'var(--success-color)' : 'var(--text-secondary)', fontWeight: 600 }}>{progress}%</span>
                   <button onClick={() => deleteSubject(subj.id)} title="Delete subject" style={delBtnStyle} onMouseEnter={e => (e.currentTarget.style.color = '#ff6b6b')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}>
@@ -228,7 +234,7 @@ export const Syllabus = () => {
                 </div>
               </div>
               
-              <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.03)' }}>
                 <div style={{ width: `${progress}%`, height: '100%', background: progress === 100 ? 'var(--success-color)' : 'var(--accent-color)', transition: 'width 0.4s ease' }} />
               </div>
 
@@ -237,6 +243,7 @@ export const Syllabus = () => {
                   <TopicNode 
                     key={topic.id} 
                     topic={topic} 
+                    subjName={subj.name}
                     onToggle={() => toggleTopic(subj.id, topic.id)} 
                     onToggleSub={(subId) => toggleSubtopic(subj.id, topic.id, subId)}
                     onToggleSubSub={(subId, ssubId) => toggleSubSubtopic(subj.id, topic.id, subId, ssubId)}
@@ -254,11 +261,10 @@ export const Syllabus = () => {
           );
         })}
 
-        {/* Add Subject */}
         <div style={{ width: 'calc(50% - 0.75rem)', minHeight: '300px', padding: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '16px', background: 'rgba(0,0,0,0.2)' }}>
           <form onSubmit={addSubject} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: '280px' }}>
             <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 500 }}>Create New Subject Domain</p>
-            <input type="text" placeholder="E.g. Quantum Physics" value={newSubj} onChange={e => setNewSubj(e.target.value)} style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff' }} />
+            <input type="text" placeholder="E.g. Quantum Physics" value={newSubj} onChange={e => setNewSubj(e.target.value)} style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', outline: 'none' }} onFocus={e => e.target.style.borderColor = 'var(--accent-color)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
             <button type="submit" className="primary-btn" style={{ padding: '0.85rem' }}>Add Domain</button>
           </form>
         </div>
@@ -268,21 +274,28 @@ export const Syllabus = () => {
 };
 
 // --- Topic Node (Level 2) ---
-const TopicNode = ({ topic, onToggle, onToggleSub, onToggleSubSub, onAddSub, onAddSubSub, onDeleteTopic, onDeleteSub, onDeleteSubSub }: {
-  topic: Topic,
+const TopicNode = ({ topic, subjName, onToggle, onToggleSub, onToggleSubSub, onAddSub, onAddSubSub, onDeleteTopic, onDeleteSub, onDeleteSubSub }: {
+  topic: Topic, subjName: string,
   onToggle: () => void, onToggleSub: (id: string) => void, onToggleSubSub: (subId: string, ssubId: string) => void,
   onAddSub: (title: string) => void, onAddSubSub: (subId: string, title: string) => void,
   onDeleteTopic: () => void, onDeleteSub: (id: string) => void, onDeleteSubSub: (subId: string, ssubId: string) => void
 }) => {
+  const { activeTopic, startStudying, stopStudying } = useAnalytics();
   const [expanded, setExpanded] = useState(false);
   const hasSubs = topic.subtopics.length > 0;
+  const isStudying = activeTopic?.id === topic.id;
   
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', background: isStudying ? 'rgba(187,134,252,0.1)' : 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '10px', border: isStudying ? '1px solid var(--accent-color)' : '1px solid rgba(255,255,255,0.03)', transition: 'all 0.3s' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
         <button onClick={() => setExpanded(!expanded)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.15rem', display: 'flex', opacity: hasSubs ? 1 : 0.3 }}>
            {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
         </button>
+        <PlayButton 
+          isActive={isStudying} 
+          onClick={(e) => { e.stopPropagation(); isStudying ? stopStudying() : startStudying({ id: topic.id, name: topic.title, subjectName: subjName }); }} 
+          size={14}
+        />
         <div onClick={onToggle} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', opacity: topic.completed ? 0.5 : 1 }}>
           {topic.completed ? <CheckCircle size={18} color="var(--success-color)" /> : <Circle size={18} color="var(--text-secondary)" />}
           <span style={{ textDecoration: topic.completed ? 'line-through' : 'none', fontWeight: 500, fontSize: '1rem' }}>{topic.title}</span>
@@ -296,7 +309,7 @@ const TopicNode = ({ topic, onToggle, onToggleSub, onToggleSubSub, onAddSub, onA
         <div style={{ paddingLeft: '2rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.2rem', borderLeft: '1px dashed rgba(255,255,255,0.1)', marginLeft: '0.65rem' }}>
           {topic.subtopics.map(st => (
             <SubtopicNode 
-              key={st.id} st={st}
+              key={st.id} st={st} subjName={subjName}
               onToggle={() => onToggleSub(st.id)}
               onToggleChild={(ssubId) => onToggleSubSub(st.id, ssubId)}
               onAddChild={(title) => onAddSubSub(st.id, title)}
@@ -311,21 +324,28 @@ const TopicNode = ({ topic, onToggle, onToggleSub, onToggleSubSub, onAddSub, onA
   );
 };
 
-// --- Subtopic Node (Level 3 — now expandable with children) ---
-const SubtopicNode = ({ st, onToggle, onToggleChild, onAddChild, onDelete, onDeleteChild }: {
-  st: Subtopic,
+// --- Subtopic Node (Level 3) ---
+const SubtopicNode = ({ st, subjName, onToggle, onToggleChild, onAddChild, onDelete, onDeleteChild }: {
+  st: Subtopic, subjName: string,
   onToggle: () => void, onToggleChild: (id: string) => void, onAddChild: (title: string) => void,
   onDelete: () => void, onDeleteChild: (id: string) => void
 }) => {
+  const { activeTopic, startStudying, stopStudying } = useAnalytics();
   const [expanded, setExpanded] = useState(false);
   const hasChildren = st.children.length > 0;
+  const isStudying = activeTopic?.id === st.id;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', background: isStudying ? 'rgba(187,134,252,0.05)' : 'transparent', borderRadius: '8px', padding: isStudying ? '0.25rem 0.5rem' : '0' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.2rem 0' }}>
         <button onClick={() => setExpanded(!expanded)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.1rem', display: 'flex', opacity: hasChildren ? 0.8 : 0.2, flexShrink: 0 }}>
           {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </button>
+        <PlayButton 
+          isActive={isStudying} 
+          onClick={() => isStudying ? stopStudying() : startStudying({ id: st.id, name: st.title, subjectName: subjName })} 
+          size={12}
+        />
         <div onClick={onToggle} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', opacity: st.completed ? 0.5 : 1 }}>
           {st.completed ? <CheckCircle size={16} color="var(--success-color)" /> : <Circle size={16} color="var(--text-secondary)" />}
           <span style={{ textDecoration: st.completed ? 'line-through' : 'none', fontSize: '0.9rem' }}>{st.title}</span>
@@ -339,15 +359,13 @@ const SubtopicNode = ({ st, onToggle, onToggleChild, onAddChild, onDelete, onDel
       {expanded && (
         <div style={{ paddingLeft: '1.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', borderLeft: '1px dotted rgba(255,255,255,0.08)', marginLeft: '0.5rem' }}>
           {st.children.map(child => (
-            <div key={child.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.15rem 0' }}>
-              <div onClick={() => onToggleChild(child.id)} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', opacity: child.completed ? 0.45 : 1 }}>
-                {child.completed ? <CheckCircle size={14} color="var(--success-color)" /> : <Circle size={14} color="var(--text-secondary)" />}
-                <span style={{ textDecoration: child.completed ? 'line-through' : 'none', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{child.title}</span>
-              </div>
-              <button onClick={() => onDeleteChild(child.id)} style={{ ...delBtnStyle, opacity: 0.3, padding: '0.1rem' }} onMouseEnter={e => { e.currentTarget.style.color = '#ff6b6b'; e.currentTarget.style.opacity = '1'; }} onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.opacity = '0.3'; }}>
-                <Trash2 size={10} />
-              </button>
-            </div>
+            <DetailNode 
+              key={child.id} 
+              child={child} 
+              subjName={subjName} 
+              onToggle={() => onToggleChild(child.id)} 
+              onDelete={() => onDeleteChild(child.id)} 
+            />
           ))}
           <GenericInput placeholder="Add detail..." onAdd={onAddChild} compact />
         </div>
@@ -356,7 +374,55 @@ const SubtopicNode = ({ st, onToggle, onToggleChild, onAddChild, onDelete, onDel
   );
 };
 
-// --- Shared Input ---
+// --- Detail Node (Level 4 - NEW PLAYABLE) ---
+const DetailNode = ({ child, subjName, onToggle, onDelete }: { child: SubSubtopic, subjName: string, onToggle: () => void, onDelete: () => void }) => {
+  const { activeTopic, startStudying, stopStudying } = useAnalytics();
+  const isStudying = activeTopic?.id === child.id;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.15rem 0.5rem', borderRadius: '6px', background: isStudying ? 'rgba(187,134,252,0.03)' : 'transparent' }}>
+      <PlayButton 
+        isActive={isStudying} 
+        onClick={() => isStudying ? stopStudying() : startStudying({ id: child.id, name: child.title, subjectName: subjName })} 
+        size={10}
+      />
+      <div onClick={onToggle} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', opacity: child.completed ? 0.45 : 1 }}>
+        {child.completed ? <CheckCircle size={14} color="var(--success-color)" /> : <Circle size={14} color="var(--text-secondary)" />}
+        <span style={{ textDecoration: child.completed ? 'line-through' : 'none', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: isStudying ? 600 : 400 }}>{child.title}</span>
+      </div>
+      <button onClick={onDelete} style={{ ...delBtnStyle, opacity: 0.3, padding: '0.1rem' }} onMouseEnter={e => { e.currentTarget.style.color = '#ff6b6b'; e.currentTarget.style.opacity = '1'; }} onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.opacity = '0.3'; }}>
+        <Trash2 size={10} />
+      </button>
+    </div>
+  );
+};
+
+// --- Helper Components ---
+const PlayButton = ({ isActive, onClick, size = 18 }: { isActive: boolean, onClick: (e: any) => void, size?: number }) => (
+  <button 
+    onClick={(e) => { e.stopPropagation(); onClick(e); }}
+    style={{ 
+      background: isActive ? 'var(--accent-color)' : 'rgba(255,255,255,0.08)', 
+      border: 'none', 
+      color: '#fff', 
+      borderRadius: '50%', 
+      width: size + 10 + 'px', 
+      height: size + 10 + 'px', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      cursor: 'pointer',
+      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+      boxShadow: isActive ? '0 0 15px var(--accent-color)' : 'none',
+      flexShrink: 0,
+    }}
+    onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.background = isActive ? 'var(--accent-color)' : 'rgba(255,255,255,0.15)' }}
+    onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = isActive ? 'var(--accent-color)' : 'rgba(255,255,255,0.08)' }}
+  >
+    {isActive ? <Pause size={size} fill="currentColor" /> : <Play size={size} fill="currentColor" style={{ marginLeft: '1px' }} />}
+  </button>
+);
+
 const GenericInput = ({ onAdd, placeholder, compact = false }: { onAdd: (title: string) => void, placeholder: string, compact?: boolean }) => {
   const [val, setVal] = useState('');
   const submit = (e: React.FormEvent) => {
@@ -370,7 +436,9 @@ const GenericInput = ({ onAdd, placeholder, compact = false }: { onAdd: (title: 
         placeholder={placeholder} 
         value={val} 
         onChange={e=>setVal(e.target.value)} 
-        style={{ flex: 1, padding: compact ? '0.35rem 0.5rem' : '0.6rem 0.85rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px 0 0 8px', color: '#fff', fontSize: compact ? '0.8rem' : '0.9rem' }} 
+        style={{ flex: 1, padding: compact ? '0.35rem 0.5rem' : '0.6rem 0.85rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px 0 0 8px', color: '#fff', fontSize: compact ? '0.8rem' : '0.9rem', outline: 'none' }} 
+        onFocus={e => e.target.style.borderColor = 'var(--accent-color)'}
+        onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
       />
       <button type="submit" style={{ background: 'var(--accent-color)', color: '#fff', border: 'none', padding: compact ? '0 0.6rem' : '0 1rem', borderRadius: '0 8px 8px 0', cursor: 'pointer' }}>
         <Plus size={compact ? 12 : 18} />

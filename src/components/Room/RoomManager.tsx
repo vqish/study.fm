@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRoom } from '../../contexts/RoomContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { Users, Plus, LogOut, Video, Mic, MicOff, VideoOff, Link as LinkIcon, Check, AlertCircle, X } from 'lucide-react';
+import { Users, Plus, LogOut, Video, Mic, MicOff, VideoOff, Link as LinkIcon, Check, AlertCircle, X, Loader2 } from 'lucide-react';
 
 export const RoomManager = () => {
   const { rooms, currentRoom, joinRoom, createRoom, leaveRoom, roomError, clearRoomError } = useRoom();
@@ -98,11 +98,15 @@ export const RoomManager = () => {
   };
 
   const handleJoin = (roomId: string) => {
-    requireAuth(() => {
+    requireAuth(async () => {
       setJoinLoading(roomId);
-      const success = joinRoom(roomId);
-      if (!success) {
-        setTimeout(() => setJoinLoading(null), 300);
+      try {
+        const success = await joinRoom(roomId);
+        if (!success) {
+           // Success false but no error? maybe just didn't work.
+        }
+      } finally {
+        setJoinLoading(null);
       }
     });
   };
@@ -210,16 +214,19 @@ export const RoomManager = () => {
                 <button 
                   onClick={() => handleJoin(room.id)} 
                   className="secondary-btn" 
-                  style={{ padding: '0.6rem 1.25rem', fontSize: '0.95rem', opacity: joinLoading === room.id ? 0.5 : 1 }}
+                  style={{ padding: '0.6rem 1.25rem', fontSize: '0.95rem', width: '90px', display: 'flex', justifyContent: 'center' }}
                   disabled={joinLoading === room.id}
                 >
-                  {joinLoading === room.id ? 'Joining...' : 'Join'}
+                  {joinLoading === room.id ? <Loader2 size={16} style={{ animation: 'spin 1.5s linear infinite' }} /> : 'Join'}
                 </button>
               </div>
             ))}
           </div>
         </>
       )}
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 };
