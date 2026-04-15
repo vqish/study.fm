@@ -220,7 +220,7 @@ export const Syllabus = () => {
 
   return (
 
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', gap: '2rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', gap: '2rem', overflow: 'hidden' }}>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
@@ -228,13 +228,15 @@ export const Syllabus = () => {
           <p style={{ color: 'var(--text-secondary)' }}>Track your studies with deep hierarchy.</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(0,0,0,0.2)', padding: '1rem 1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', background: 'rgba(255,255,255,0.03)', padding: '0.8rem 1.5rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Overall Progress</span>
-            <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent-color)' }}>{overallProgress}%</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Total Completion</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fff' }}>{overallProgress}<span style={{ fontSize: '0.9rem', color: 'var(--accent-color)' }}>%</span></span>
           </div>
-          <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: `conic-gradient(var(--accent-color) ${overallProgress}%, transparent 0)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: '40px', height: '40px', background: 'var(--surface-color)', borderRadius: '50%' }}></div>
+          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: `conic-gradient(var(--accent-color) ${overallProgress}%, rgba(255,255,255,0.05) 0)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px rgba(187,134,252,0.2)' }}>
+            <div style={{ width: '32px', height: '32px', background: 'var(--surface-color)', borderRadius: '50%' }}></div>
           </div>
+        </div>
         </div>
       </div>
 
@@ -261,7 +263,7 @@ export const Syllabus = () => {
         )}
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignContent: 'flex-start', paddingBottom: '2rem' }}>
+      <div className="module-scroll-area" style={{ flex: 1, display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignContent: 'flex-start', paddingBottom: '2rem' }}>
         {subjects.map(subj => {
           const leaf = calcLeafCount([subj]);
           const progress = leaf.total === 0 ? 0 : Math.round((leaf.comp / leaf.total) * 100);
@@ -288,7 +290,7 @@ export const Syllabus = () => {
                 <div style={{ width: `${progress}%`, height: '100%', background: progress === 100 ? 'var(--success-color)' : 'var(--accent-color)', transition: 'width 0.4s ease' }} />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem', flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem', flex: 1, overflowY: 'auto', paddingRight: '0.5rem', scrollbarWidth: 'thin' }}>
                 {subj.topics.map(topic => (
                   <TopicNode 
                     key={topic.id} 

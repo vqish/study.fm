@@ -1,71 +1,54 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Video, Mic, PenTool, CheckSquare, Trash2, Eraser, Upload, FileText, Download, Eye, FolderOpen, X, Cloud, CloudOff, Loader2, Plus } from 'lucide-react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Video, Trash2, FileText, X, Cloud, Loader2, Plus, ChevronRight, Save, FolderOpen, Upload, Download, Eye, Search } from 'lucide-react';
 import { saveFile, getAllFiles, deleteFile, downloadFile, formatFileSize, type StoredFile } from '../../utils/fileStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../utils/db';
 
+type Note = {
+  id: string;
+  title: string;
+  content: string;
+  lastSaved: number;
+};
+
 export const Notes = () => {
   const { user } = useAuth();
   const editorRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const savedSelection = useRef<Range | null>(null);
   const saveTimeoutRef = useRef<any>(null);
 
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [drawingMode, setDrawingMode] = useState(false);
-  const [showFiles, setShowFiles] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<StoredFile[]>([]);
-  const [previewFile, setPreviewFile] = useState<StoredFile | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [activeNote, setActiveNote] = useState<Note | null>(null);
+  const [loading, setLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'saved' | 'offline'>('idle');
   
-  const [strokeColor, setStrokeColor] = useState('#bb86fc');
-  const [strokeWidth, setStrokeWidth] = useState(3);
-  const [isEraser, setIsEraser] = useState(false);
+  const [showFiles, setShowFiles] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<StoredFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-
-  // Load notes content
-  useEffect(() => {
-    const loadContent = async () => {
-      if (user) {
-        setSyncStatus('syncing');
-        try {
-          const cloudContent = await db.getNotes(user.uid);
-          if (cloudContent && editorRef.current) {
-            editorRef.current.innerHTML = cloudContent;
-            setSyncStatus('saved');
-          } else {
-             // Fallback to local if no cloud data
-             const saved = localStorage.getItem('studyfm_notes_data');
-             if (saved && editorRef.current) {
-               editorRef.current.innerHTML = saved;
-             }
-             setSyncStatus('idle');
-          }
-        } catch (err) {
-          setSyncStatus('offline');
-        }
-      } else {
-        const saved = localStorage.getItem('studyfm_notes_data');
-        if (saved && editorRef.current) {
-          editorRef.current.innerHTML = saved;
-        }
+  // Load all notes from Firestore
+  const loadNotes = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const fetchedNotes = await db.getNotes(user.uid);
+      const sorted = fetchedNotes.sort((a: Note, b: Note) => b.lastSaved - a.lastSaved);
+      setNotes(sorted);
+      if (sorted.length > 0 && !activeNote) {
+        setActiveNote(sorted[0]);
       }
-    };
-
-    loadContent();
+    } catch (err) {
+      console.error("Failed to load notes:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
-  // Load files separately to ensure they refresh when user changes
-  useEffect(() => {
-    if (user) loadFiles();
-    else setUploadedFiles([]);
-  }, [user]);
-
-  const loadFiles = async () => {
+  // Load files
+  const loadFiles = useCallback(async () => {
     if (!user) return;
     try {
       const files = await getAllFiles(user.uid);
@@ -73,299 +56,468 @@ export const Notes = () => {
     } catch (err) {
       console.error('Failed to load files:', err);
     }
-  };
+  }, [user]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !user) return;
-    setIsUploading(true);
-    try {
-      for (const file of Array.from(files)) {
-        if (file.size > 50 * 1024 * 1024) {
-          alert(`File "${file.name}" is too large. Max 50MB.`);
-          continue;
-        }
-        await saveFile(file, user.uid);
+  useEffect(() => {
+    loadNotes();
+    if (user) loadFiles();
+  }, [user]);
+
+  // Sync editor content when active note changes
+  useEffect(() => {
+    if (activeNote && editorRef.current) {
+      if (editorRef.current.innerHTML !== activeNote.content) {
+        editorRef.current.innerHTML = activeNote.content || '';
       }
-      await loadFiles();
-    } catch (err: any) {
-      console.error("Upload error:", err);
-      alert(`Failed to upload file: ${err.message || 'Unknown error'}. Make sure your .env keys and Storage rules are correct.`);
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  };
+  }, [activeNote?.id]);
 
-  const handleDeleteFile = async (file: any) => {
-    if (!user || !confirm('Delete this file permanently?')) return;
-    await deleteFile(file, user.uid);
-    await loadFiles();
-    if (previewFile?.id === file.id) setPreviewFile(null);
-  };
+  // Listen for open-note events from Files drawer
+  useEffect(() => {
+    const handleOpenNote = (e: any) => {
+      const noteId = e.detail?.id;
+      if (!noteId || !user) return;
 
+      const inList = notes.find(n => n.id === noteId);
+      if (inList) {
+        setActiveNote(inList);
+        setShowFiles(false);
+      } else {
+        db.getNote(user.uid, noteId).then(n => {
+          if (n) {
+            setNotes(prev => [n, ...prev.filter(x => x.id !== n.id)]);
+            setActiveNote(n);
+            setShowFiles(false);
+          }
+        });
+      }
+    };
+    window.addEventListener('open-note', handleOpenNote);
+    return () => window.removeEventListener('open-note', handleOpenNote);
+  }, [user, notes]);
+
+  const createNewNote = () => {
+    const newNote: Note = {
+      id: `note_${Date.now()}`,
+      title: 'Untitled Note',
+      content: '<h2>New Note</h2><p>Start writing...</p>',
+      lastSaved: Date.now()
+    };
+    setNotes(prev => [newNote, ...prev]);
+    setActiveNote(newNote);
+    setTimeout(() => {
+      if (editorRef.current) {
+        editorRef.current.innerHTML = newNote.content;
+        editorRef.current.focus();
+      }
+    }, 50);
+  };
 
   const syncToCloud = () => {
-    if (!user || !editorRef.current) return;
+    if (!user || !activeNote || !editorRef.current) return;
     
     setSyncStatus('syncing');
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
     saveTimeoutRef.current = setTimeout(async () => {
       try {
-        const content = editorRef.current?.innerHTML || '';
-        await db.saveNotes(user.uid, content);
+        const updatedContent = editorRef.current?.innerHTML || '';
+        const updatedNote = { ...activeNote, content: updatedContent, lastSaved: Date.now() };
+        await db.saveNote(user.uid, updatedNote);
+        setNotes(prev => prev.map(n => n.id === activeNote.id ? { ...n, content: updatedContent, lastSaved: Date.now() } : n));
         setSyncStatus('saved');
-        localStorage.setItem('studyfm_notes_data', content);
+        setTimeout(() => setSyncStatus('idle'), 2000);
       } catch (err) {
         setSyncStatus('offline');
       }
-    }, 2000); // 2 second throttle for cloud syncing
+    }, 1500); 
   };
 
-  const saveToLocal = () => {
-    if (editorRef.current) {
-      localStorage.setItem('studyfm_notes_data', editorRef.current.innerHTML);
-      if (user) syncToCloud();
+  const manualSave = async () => {
+    if (!user || !activeNote || !editorRef.current) return;
+    setSyncStatus('syncing');
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    try {
+      const content = editorRef.current.innerHTML || '';
+      const updated = { ...activeNote, content, lastSaved: Date.now() };
+      await db.saveNote(user.uid, updated);
+      setNotes(prev => prev.map(n => n.id === activeNote.id ? updated : n));
+      setSyncStatus('saved');
+      setTimeout(() => setSyncStatus('idle'), 2000);
+    } catch {
+      setSyncStatus('offline');
     }
   };
 
-  const saveSelection = () => {
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0) {
-      savedSelection.current = sel.getRangeAt(0);
-    }
+  const updateTitle = async (newTitle: string) => {
+    if (!activeNote || !user) return;
+    const updated = { ...activeNote, title: newTitle };
+    setActiveNote(updated);
+    setNotes(prev => prev.map(n => n.id === activeNote.id ? { ...n, title: newTitle } : n));
+    // Debounce title save
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(async () => {
+      await db.saveNote(user.uid, { ...updated, content: editorRef.current?.innerHTML || updated.content });
+    }, 800);
   };
 
-  const restoreSelection = () => {
-    if (savedSelection.current) {
-      const sel = window.getSelection();
-      if (sel) {
-        sel.removeAllRanges();
-        sel.addRange(savedSelection.current);
+  const deleteActiveNote = async () => {
+    if (!activeNote || !user || !confirm('Delete this note?')) return;
+    await db.deleteNote(user.uid, activeNote.id);
+    const remaining = notes.filter(n => n.id !== activeNote.id);
+    setNotes(remaining);
+    const next = remaining.length > 0 ? remaining[0] : null;
+    setActiveNote(next);
+    if (editorRef.current) editorRef.current.innerHTML = next?.content || '';
+  };
+
+  // File upload
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files;
+    if (!selected || selected.length === 0 || !user) return;
+    setIsUploading(true);
+    try {
+      for (const f of Array.from(selected)) {
+        await saveFile(f, user.uid);
       }
-    } else {
-      editorRef.current?.focus();
+      await loadFiles();
+    } catch (err) {
+      console.error("Upload failed:", err);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const formatDoc = (cmd: string, value?: string, requiresRestore = false) => {
-    if (requiresRestore) restoreSelection();
-    else editorRef.current?.focus();
+  // Editor Commands
+  const formatDoc = (cmd: string, value?: string) => {
+    editorRef.current?.focus();
     document.execCommand(cmd, false, value);
-    saveToLocal();
+    syncToCloud();
   };
 
-  const insertLink = () => {
-    saveSelection();
-    setTimeout(() => {
-      const url = prompt('Enter link URL:');
-      if (url) formatDoc('createLink', url, true);
-    }, 50);
-  };
-
-  const insertImage = () => {
-    saveSelection();
-    setTimeout(() => {
-      const url = prompt('Enter image URL:');
-      if (url) formatDoc('insertImage', url, true);
-    }, 50);
-  };
-
-  const insertVideo = () => {
-    saveSelection();
-    setTimeout(() => {
-      const url = prompt('Enter YouTube embed URL (e.g. https://www.youtube.com/embed/...):');
-      if (url) {
-        const iframe = `<br/><iframe width="560" height="315" src="${url}" frameborder="0" allowfullscreen style="border-radius:12px; margin: 10px 0;"></iframe><br/>`;
-        formatDoc('insertHTML', iframe, true);
-      }
-    }, 50);
-  };
-
-  const insertCheckbox = () => {
-    const checkbox = `<input type="checkbox" style="width: 18px; height: 18px; margin-right: 8px; vertical-align: middle;" />`;
-    formatDoc('insertHTML', checkbox);
-  };
-
-  const toggleRecording = async () => {
-    if (isRecording) {
-      mediaRecorderRef.current?.stop();
-      setIsRecording(false);
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
-        mediaRecorderRef.current = mediaRecorder;
-        saveSelection();
-        const chunks: BlobPart[] = [];
-        mediaRecorder.ondataavailable = e => chunks.push(e.data);
-        mediaRecorder.onstop = () => {
-          const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
-          const audioUrl = URL.createObjectURL(blob);
-          const audioHtml = `<br/><audio controls src="${audioUrl}" style="height: 40px; margin: 10px 0; border-radius: 20px; outline: none;"></audio><br/>`;
-          formatDoc('insertHTML', audioHtml, true);
-          stream.getTracks().forEach(t => t.stop());
-        };
-        mediaRecorder.start();
-        setIsRecording(true);
-      } catch {
-        alert("Microphone access denied or unavailable.");
-      }
-    }
-  };
+  // Not logged in
+  if (!user && !loading) {
+    return (
+      <div style={styles.noActive}>
+        <FileText size={48} style={{ opacity: 0.15, marginBottom: '1rem' }} />
+        <h3>Sign in to use Notes</h3>
+        <p>Your notes are saved securely to the cloud.</p>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', gap: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-             <h2 style={{ fontSize: '1.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Rich Notes</h2>
-             {user && (
-               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 600, color: syncStatus === 'offline' ? 'var(--danger-color)' : 'var(--text-secondary)' }}>
-                 {syncStatus === 'syncing' ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : 
-                  syncStatus === 'saved' ? <Cloud size={14} color="var(--success-color)" /> : 
-                  syncStatus === 'offline' ? <CloudOff size={14} /> : null}
-                 {syncStatus === 'syncing' ? 'Syncing...' : syncStatus === 'saved' ? 'Cloud Synced' : syncStatus === 'offline' ? 'Sync Failed' : ''}
-               </div>
-             )}
-          </div>
-          <p style={{ color: 'var(--text-secondary)' }}>Format, embed, draw, record, and upload files.</p>
+    <div style={{ display: 'flex', width: '100%', height: '100%', gap: '1.5rem', overflow: 'hidden', position: 'relative' }}>
+      
+      {/* 1. Sidebar — All Notes */}
+      <div className="glass-panel" style={styles.sidebar}>
+        <div style={styles.sidebarHeader}>
+          <h3 style={styles.sidebarTitle}>All Notes</h3>
+          <button onClick={createNewNote} style={styles.addBtn} title="New Note"><Plus size={18} /></button>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button 
-            className="secondary-btn" 
-            onClick={() => setShowFiles(!showFiles)} 
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: '10px' }}
-          >
-            <FolderOpen size={18} />
-            My Files {uploadedFiles.length > 0 && <span style={{ background: 'var(--accent-color)', color: '#fff', borderRadius: '12px', padding: '0.1rem 0.5rem', fontSize: '0.75rem', fontWeight: 700 }}>{uploadedFiles.length}</span>}
-          </button>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: '10px', cursor: 'pointer', background: 'var(--accent-color)', color: '#fff', fontWeight: 500, fontSize: '0.9rem', transition: 'all 0.2s' }}>
-            <Upload size={18} />
-            {isUploading ? 'Uploading...' : 'Upload File'}
-            <input 
-              ref={fileInputRef}
-              type="file" 
-              multiple 
-              onChange={handleFileUpload} 
-              style={{ display: 'none' }}
-              accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.gif,.xlsx,.pptx,.csv"
-            />
-          </label>
-        </div>
-      </div>
-
-      {/* Uploaded Files Panel & Preview Modal remain same */}
-      {showFiles && (
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '14px', animation: 'slideUp 0.3s ease', maxHeight: '300px', overflowY: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>📁 My Files</h3>
-            <button onClick={() => setShowFiles(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}><X size={18} /></button>
-          </div>
-          {uploadedFiles.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', opacity: 0.6 }}>
-              <FileText size={32} style={{ marginBottom: '0.5rem' }} />
-              <p>No files uploaded yet</p>
+        
+        <div className="module-scroll-area" style={{ flex: 1 }}>
+          {loading ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', marginBottom: '0.5rem' }} />
+              <p style={{ fontSize: '0.85rem' }}>Loading notes...</p>
+            </div>
+          ) : notes.length === 0 ? (
+            <div style={styles.emptySidebar}>
+              <FileText size={32} style={{ opacity: 0.2, marginBottom: '0.75rem' }} />
+              <p style={{ fontSize: '0.85rem' }}>No notes yet.</p>
+              <button onClick={createNewNote} style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--accent-color)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
+                + Create first note
+              </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {uploadedFiles.map(file => (
-                <div key={file.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ fontSize: '1.5rem' }}>📎</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 500, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</p>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      {formatFileSize(file.size)} • {new Date(file.uploadDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
-                    {file.preview && (
-                      <button onClick={() => setPreviewFile(file)} style={iconBtnStyle} title="Preview"><Eye size={16} /></button>
-                    )}
-                    <button onClick={() => {
-                        const html = file.preview ? `<br/><img src="${file.preview}" alt="${file.name}" style="max-width: 100%; border-radius: 8px;"/><br/>` : `<br/><a href="${file.url}" target="_blank">📎 ${file.name}</a><br/>`;
-                        formatDoc('insertHTML', html);
-                    }} style={iconBtnStyle} title="Attach to Note"><Plus size={16} /></button>
-                    <button onClick={() => downloadFile(file)} style={iconBtnStyle} title="Download"><Download size={16} /></button>
-                    <button onClick={() => handleDeleteFile(file)} style={{ ...iconBtnStyle, color: 'var(--danger-color)' }} title="Delete"><Trash2 size={16} /></button>
-                  </div>
+            notes.map(note => (
+              <div 
+                key={note.id} 
+                onClick={() => {
+                  setActiveNote(note);
+                  if (editorRef.current) editorRef.current.innerHTML = note.content || '';
+                }}
+                style={{ 
+                  ...styles.noteItem, 
+                  background: activeNote?.id === note.id ? 'rgba(187, 134, 252, 0.12)' : 'transparent',
+                  borderLeft: activeNote?.id === note.id ? '3px solid var(--accent-color)' : '3px solid transparent'
+                }}
+              >
+                <div style={styles.noteItemInfo}>
+                  <p style={{ fontWeight: activeNote?.id === note.id ? 700 : 500, fontSize: '0.9rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note.title || 'Untitled'}</p>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>{new Date(note.lastSaved).toLocaleDateString()}</p>
                 </div>
-              ))}
-            </div>
+                <ChevronRight size={14} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
+              </div>
+            ))
           )}
-        </div>
-      )}
-
-      {/* Editor & Drawing Canvas */}
-      <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', padding: 0, borderRadius: '16px' }}>
-        <div style={{ display: 'flex', gap: '0.5rem', padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.3)', flexWrap: 'wrap', alignItems: 'center' }}>
-          <button onClick={() => formatDoc('bold')} style={toolbarStyles.toolbarBtn} title="Bold"><Bold size={18} /></button>
-          <button onClick={() => formatDoc('italic')} style={toolbarStyles.toolbarBtn} title="Italic"><Italic size={18} /></button>
-          <button onClick={() => formatDoc('underline')} style={toolbarStyles.toolbarBtn} title="Underline"><Underline size={18} /></button>
-          <button onClick={insertCheckbox} style={toolbarStyles.toolbarBtn} title="Checkbox"><CheckSquare size={18} /></button>
-          <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', height: '20px', margin: '0 0.5rem' }} />
-          <button onClick={insertLink} style={toolbarStyles.toolbarBtn} title="Link"><LinkIcon size={18} /></button>
-          <button onClick={insertImage} style={toolbarStyles.toolbarBtn} title="Image URL"><ImageIcon size={18} /></button>
-          <button onClick={insertVideo} style={toolbarStyles.toolbarBtn} title="Video Embed"><Video size={18} /></button>
-          <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', height: '20px', margin: '0 0.5rem' }} />
-          <button 
-            onClick={toggleRecording} 
-            style={{ ...toolbarStyles.toolbarBtn, color: isRecording ? 'var(--danger-color)' : 'inherit', background: isRecording ? 'rgba(239, 68, 68, 0.15)' : 'transparent' }} 
-          >
-            <Mic size={18} />
-          </button>
-        </div>
-
-        <div style={{ flex: 1, position: 'relative', background: 'transparent', overflowY: 'auto' }}>
-          <div 
-            ref={editorRef}
-            contentEditable 
-            suppressContentEditableWarning={true}
-            style={{ width: '100%', minHeight: '100%', padding: '2rem 3rem', outline: 'none', color: 'var(--text-primary)', lineHeight: 1.7, fontSize: '1.05rem' }}
-            onInput={saveToLocal}
-            onBlur={saveSelection}
-          >
-            <h2>My Study Notes</h2>
-            <div>Start typing your rich notes here... they will be synced to your cloud account automatically.</div>
-          </div>
         </div>
       </div>
 
-      {/* Preview Modal */}
-      {previewFile && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-           <div style={{ position: 'absolute', top: '2rem', right: '2rem', display: 'flex', gap: '1rem' }}>
-              <button className="primary-btn" onClick={() => downloadFile(previewFile)}>Download</button>
-              <button onClick={() => setPreviewFile(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: '0.8rem', borderRadius: '12px', cursor: 'pointer' }}><X size={20} /></button>
-           </div>
-           
-           <div style={{ maxWidth: '90vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              {previewFile.type.startsWith('image/') ? (
-                 <img src={previewFile.url} alt={previewFile.name} style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} />
-              ) : previewFile.type.startsWith('video/') ? (
-                 <video src={previewFile.url} controls autoPlay style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '12px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} />
-              ) : previewFile.type === 'application/pdf' ? (
-                 <iframe src={previewFile.url} style={{ width: '80vw', height: '80vh', border: 'none', borderRadius: '12px', background: '#fff' }} />
-              ) : (
-                 <div className="glass-panel" style={{ padding: '4rem', textAlign: 'center', borderRadius: '24px' }}>
-                    <FileText size={64} style={{ marginBottom: '1.5rem', color: 'var(--accent-color)' }} />
-                    <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{previewFile.name}</h3>
-                    <p style={{ color: 'var(--text-secondary)' }}>No native preview available for this file type.</p>
-                 </div>
-              )}
-           </div>
-        </div>
+      {/* 2. Main Editor Area */}
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', gap: '1rem' }}>
+        
+        {activeNote ? (
+          <>
+            {/* Header row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0, gap: '1rem' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <input 
+                  type="text" 
+                  value={activeNote.title} 
+                  onChange={e => updateTitle(e.target.value)}
+                  style={styles.titleInput}
+                  placeholder="Note Title..."
+                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
+                  <div style={{ ...styles.syncBadge, color: syncStatus === 'offline' ? 'var(--danger-color)' : syncStatus === 'saved' ? '#03DAC6' : 'var(--text-secondary)' }}>
+                    {syncStatus === 'syncing' ? <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> : 
+                     syncStatus === 'saved' ? <Cloud size={11} /> : <Save size={11} />}
+                    {syncStatus === 'idle' ? 'Auto-save enabled' : syncStatus.toUpperCase()}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                <button onClick={manualSave} className="secondary-btn" style={styles.metaBtn} title="Save now">
+                  <Save size={16} /> Save
+                </button>
+                <button className="secondary-btn" onClick={() => { setShowFiles(!showFiles); loadFiles(); }} style={styles.metaBtn}>
+                  <FolderOpen size={16} /> Files
+                </button>
+                <button className="secondary-btn" onClick={deleteActiveNote} style={{ ...styles.metaBtn, color: 'var(--danger-color)' }}>
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Editor panel */}
+            <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', padding: 0 }}>
+              {/* Toolbar */}
+              <div style={styles.toolbar}>
+                <ToolBtn icon={<Bold size={15} />} onClick={() => formatDoc('bold')} title="Bold" />
+                <ToolBtn icon={<Italic size={15} />} onClick={() => formatDoc('italic')} title="Italic" />
+                <ToolBtn icon={<Underline size={15} />} onClick={() => formatDoc('underline')} title="Underline" />
+                <div style={styles.vDivider} />
+                <ToolBtn icon={<span style={{ fontSize: '0.75rem', fontWeight: 800 }}>H1</span>} onClick={() => formatDoc('formatBlock', 'h1')} title="Heading 1" />
+                <ToolBtn icon={<span style={{ fontSize: '0.75rem', fontWeight: 800 }}>H2</span>} onClick={() => formatDoc('formatBlock', 'h2')} title="Heading 2" />
+                <ToolBtn icon={<span style={{ fontSize: '0.75rem' }}>¶</span>} onClick={() => formatDoc('formatBlock', 'p')} title="Paragraph" />
+                <div style={styles.vDivider} />
+                <ToolBtn icon={<LinkIcon size={15} />} onClick={() => { const url = prompt('Link URL:'); if (url) formatDoc('createLink', url); }} title="Insert Link" />
+                <ToolBtn icon={<ImageIcon size={15} />} onClick={() => { const url = prompt('Image URL:'); if (url) formatDoc('insertImage', url); }} title="Insert Image" />
+                <ToolBtn icon={<Video size={15} />} onClick={() => {
+                   const url = prompt('YouTube Embed URL:');
+                   if (url) {
+                     const ytId = url.includes('watch?v=') ? new URL(url).searchParams.get('v') : url.split('/').pop();
+                     editorRef.current?.focus();
+                     document.execCommand('insertHTML', false, `<iframe width="100%" height="280" src="https://www.youtube.com/embed/${ytId}" frameborder="0" allowfullscreen style="border-radius:12px;margin:1rem 0;"></iframe>`);
+                     syncToCloud();
+                   }
+                }} title="Embed YouTube" />
+              </div>
+
+              {/* Editor */}
+              <div 
+                ref={editorRef}
+                contentEditable 
+                suppressContentEditableWarning
+                className="module-scroll-area"
+                onInput={syncToCloud}
+                data-placeholder="Start writing your note here..."
+                style={styles.editor}
+              />
+            </div>
+          </>
+        ) : (
+          <div style={styles.noActive}>
+            <FileText size={56} style={{ opacity: 0.1, marginBottom: '1.5rem' }} />
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '0.5rem' }}>No Note Selected</h3>
+            <p style={{ color: 'var(--text-secondary)', maxWidth: '300px', lineHeight: 1.6 }}>
+              {loading ? 'Loading your notes...' : 'Select a note from the sidebar or create a new one.'}
+            </p>
+            {!loading && (
+              <button onClick={createNewNote} className="primary-btn" style={{ marginTop: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Plus size={18} /> Create First Note
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 3. Files Drawer (slides in from right) */}
+      {showFiles && (
+        <FilesDrawer 
+          files={uploadedFiles}
+          isUploading={isUploading}
+          fileInputRef={fileInputRef}
+          onUpload={handleUpload}
+          onClose={() => setShowFiles(false)}
+          onInsertImage={(url) => {
+            editorRef.current?.focus();
+            document.execCommand('insertImage', false, url);
+            syncToCloud();
+            setShowFiles(false);
+          }}
+          onDeleteFile={async (f) => {
+            if (!user || !confirm('Delete file?')) return;
+            await deleteFile(f, user.uid);
+            await loadFiles();
+          }}
+          onOpenNote={(id) => {
+            window.dispatchEvent(new CustomEvent('open-note', { detail: { id } }));
+          }}
+        />
       )}
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+        [contenteditable]:empty:before { content: attr(data-placeholder); color: rgba(255,255,255,0.2); pointer-events: none; }
+        [contenteditable] h1 { font-size: 2rem; font-weight: 800; margin: 1rem 0 0.5rem; }
+        [contenteditable] h2 { font-size: 1.5rem; font-weight: 700; margin: 0.75rem 0 0.4rem; }
+        [contenteditable] p { margin: 0.25rem 0; }
+        [contenteditable] a { color: var(--accent-color); }
+        [contenteditable] img { max-width: 100%; border-radius: 12px; margin: 0.5rem 0; }
       `}</style>
     </div>
   );
 };
 
-const iconBtnStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.4rem', borderRadius: '6px', display: 'flex', alignItems: 'center' };
-const toolbarStyles = {
-  toolbarBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', border: 'none', background: 'transparent', color: 'var(--text-primary)' },
+// Toolbar button
+const ToolBtn = ({ icon, onClick, title }: { icon: any, onClick: () => void, title?: string }) => (
+  <button onClick={onClick} style={styles.toolBtn} title={title}>{icon}</button>
+);
+
+// Files drawer component
+const FilesDrawer = ({ 
+  files, isUploading, fileInputRef, onUpload, onClose, onInsertImage, onDeleteFile, onOpenNote
+}: {
+  files: StoredFile[];
+  isUploading: boolean;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onClose: () => void;
+  onInsertImage: (url: string) => void;
+  onDeleteFile: (f: StoredFile) => void;
+  onOpenNote: (id: string) => void;
+}) => {
+  const [search, setSearch] = useState('');
+  const [previewFile, setPreviewFile] = useState<StoredFile | null>(null);
+  const filtered = files.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <>
+      <div className="glass-panel" style={styles.drawer}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexShrink: 0 }}>
+          <h4 style={{ fontWeight: 800, fontSize: '1rem' }}>Files & Materials</h4>
+          <button onClick={onClose} style={{ color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '0.35rem' }}><X size={16} /></button>
+        </div>
+
+        {/* Search */}
+        <div style={{ position: 'relative', marginBottom: '0.75rem', flexShrink: 0 }}>
+          <Search size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+          <input 
+            value={search} 
+            onChange={e => setSearch(e.target.value)} 
+            placeholder="Search files..."
+            style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '0.5rem 0.75rem 0.5rem 2.25rem', color: '#fff', fontSize: '0.85rem', outline: 'none' }}
+          />
+        </div>
+
+        {/* Upload */}
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.75rem', borderRadius: '10px', background: 'rgba(187,134,252,0.12)', border: '1px dashed rgba(187,134,252,0.3)', color: 'var(--accent-color)', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.75rem', flexShrink: 0 }}>
+          {isUploading ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={15} />}
+          {isUploading ? 'Uploading...' : 'Upload File'}
+          <input ref={fileInputRef} type="file" multiple onChange={onUpload} style={{ display: 'none' }} />
+        </label>
+
+        {/* File list */}
+        <div className="module-scroll-area" style={{ flex: 1 }}>
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', opacity: 0.5 }}>
+              <FileText size={32} style={{ marginBottom: '0.5rem' }} />
+              <p style={{ fontSize: '0.85rem' }}>{search ? 'No matching files' : 'No files yet'}</p>
+            </div>
+          ) : filtered.map(f => (
+            <div key={f.id} style={styles.drawerItem}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                {f.type.startsWith('image/') ? (
+                  <img src={f.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <FileText size={16} color={f.type === 'application/x-studyfm-note' ? '#03DAC6' : 'var(--accent-color)'} />
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: '0.8rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</p>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                  {f.type === 'application/x-studyfm-note' ? '📝 Note' : formatFileSize(f.size)}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.25rem' }}>
+                {f.type === 'application/x-studyfm-note' ? (
+                  <button onClick={() => onOpenNote(f.id)} style={styles.drawerAction} title="Open Note"><Eye size={13} /></button>
+                ) : f.type.startsWith('image/') ? (
+                  <button onClick={() => onInsertImage(f.url)} style={styles.drawerAction} title="Insert into note"><Plus size={13} /></button>
+                ) : (
+                  <button onClick={() => setPreviewFile(f)} style={styles.drawerAction} title="Preview"><Eye size={13} /></button>
+                )}
+                {f.type !== 'application/x-studyfm-note' && (
+                  <button onClick={() => downloadFile(f)} style={styles.drawerAction} title="Download"><Download size={13} /></button>
+                )}
+                <button onClick={() => onDeleteFile(f)} style={{ ...styles.drawerAction, color: 'var(--danger-color)' }} title="Delete"><Trash2 size={13} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* File Preview Modal */}
+      {previewFile && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', zIndex: 9000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+          <div style={{ width: '100%', maxWidth: '900px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>{previewFile.name}</h3>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={() => downloadFile(previewFile)} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '0.5rem 1rem', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}><Download size={14} /> Download</button>
+                <button onClick={() => setPreviewFile(null)} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '0.5rem', borderRadius: '10px', cursor: 'pointer' }}><X size={18} /></button>
+              </div>
+            </div>
+            {previewFile.type.startsWith('image/') ? (
+              <img src={previewFile.url} alt={previewFile.name} style={{ maxWidth: '100%', maxHeight: '75vh', borderRadius: '12px' }} />
+            ) : previewFile.type === 'application/pdf' ? (
+              <iframe src={previewFile.url} style={{ width: '100%', height: '70vh', border: 'none', borderRadius: '12px', background: '#fff' }} />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '3rem' }}>
+                <FileText size={64} color="var(--accent-color)" />
+                <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>Preview not available for this file type.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+const styles = {
+  sidebar: { width: '240px', borderRadius: '20px', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden', background: 'rgba(0,0,0,0.2)', flexShrink: 0 },
+  sidebarHeader: { padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' },
+  sidebarTitle: { fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' as const, letterSpacing: '1.5px' },
+  addBtn: { width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-color)', borderRadius: '8px', color: '#fff', flexShrink: 0 },
+  emptySidebar: { textAlign: 'center' as const, padding: '3rem 1rem', color: 'var(--text-secondary)' },
+  noteItem: { display: 'flex', alignItems: 'center', padding: '0.85rem 1.25rem', cursor: 'pointer', transition: 'all 0.2s', gap: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.03)' },
+  noteItemInfo: { flex: 1, minWidth: 0 },
+  titleInput: { width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '1.7rem', fontWeight: 800, padding: 0, outline: 'none', letterSpacing: '-0.5px' },
+  syncBadge: { display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' as const },
+  metaBtn: { padding: '0.45rem 0.85rem', borderRadius: '10px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 },
+  toolbar: { display: 'flex', gap: '0.2rem', padding: '0.6rem 0.75rem', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.05)', flexWrap: 'wrap' as const },
+  toolBtn: { padding: '0.4rem 0.5rem', borderRadius: '6px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', transition: 'background 0.15s, color 0.15s' },
+  vDivider: { width: '1px', background: 'rgba(255,255,255,0.08)', margin: '0 0.4rem', alignSelf: 'stretch' },
+  editor: { flex: 1, padding: '2rem 2.5rem', outline: 'none', fontSize: '1rem', lineHeight: 1.75, background: 'transparent', color: '#f0f0f0', minHeight: 0 },
+  noActive: { flex: 1, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', textAlign: 'center' as const, padding: '4rem' },
+  drawer: { width: '280px', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden', padding: '1.25rem', animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)', flexShrink: 0 },
+  drawerItem: { display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.5rem', borderRadius: '10px', marginBottom: '0.4rem', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' },
+  drawerAction: { background: 'rgba(255,255,255,0.06)', border: 'none', color: 'var(--text-secondary)', padding: '0.35rem', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }
 };

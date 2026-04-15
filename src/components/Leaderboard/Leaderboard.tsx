@@ -64,7 +64,7 @@ export const Leaderboard = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', gap: '1.5rem', overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.5px' }}>Global Leaderboard</h2>
@@ -104,7 +104,7 @@ export const Leaderboard = () => {
         </div>
       )}
 
-      <div className="glass-panel" style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="glass-panel module-scroll-area" style={{ flex: 1, padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ display: 'flex', padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontSize: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
           <div style={{ width: '80px' }}>Rank</div>
           <div style={{ flex: 1 }}>Student</div>

@@ -10,9 +10,10 @@ import { Leaderboard } from '../Leaderboard/Leaderboard';
 import { Community } from '../Community/Community';
 import { Settings } from '../Settings/Settings';
 import { StudyAnalytics } from '../Analytics/StudyAnalytics';
-import { Quotes } from '../Focus/Quotes';
-import type { SlideId } from '../Layout/AppLayout';
+import { FocusMode } from '../Focus/FocusMode';
 import { Minimize, Image as ImageIcon } from 'lucide-react';
+
+const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
 export const Dashboard = ({ activeSlide, setActiveSlide }: { activeSlide: SlideId, setActiveSlide: (id: SlideId) => void }) => {
   
@@ -54,7 +55,7 @@ export const Dashboard = ({ activeSlide, setActiveSlide }: { activeSlide: SlideI
 
   const getSlideStyle = (slideName: SlideId | 'rooms' | 'media' | 'syllabus' | 'notes' | 'flashcards' | 'leaderboard' | 'community' | 'analytics' | 'settings'): React.CSSProperties => {
     const isActive = activeSlide === slideName;
-    if (slideName === 'timer' && isFocus) return { display: 'flex', position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', background: 'transparent', boxShadow: 'none', padding: '1rem', zIndex: 5, justifyContent: 'center' };
+    if (slideName === 'timer' && isFocus) return { display: 'none' }; // Handle via Focus layout
     
     // For media, we must never use display: none, otherwise iframe pauses
     if (slideName === 'media') {
@@ -86,11 +87,11 @@ export const Dashboard = ({ activeSlide, setActiveSlide }: { activeSlide: SlideI
       </div>
 
       {/* 2. Rooms */}
-      <div style={{ ...getSlideStyle('rooms'), gap: '1.5rem', height: 'calc(100vh - 2rem)', paddingBottom: '2rem', width: '100%' }}>
-        <div className="slide-content glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ ...getSlideStyle('rooms'), gap: '1.5rem', height: '100%', width: '100%' }}>
+        <div className="slide-content glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
           <RoomManager />
         </div>
-        <div className="slide-content glass-panel" style={{ flex: 1.5, padding: '2rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="slide-content glass-panel" style={{ flex: 1.5, padding: '2rem', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
           <Chat />
         </div>
       </div>
@@ -108,50 +109,17 @@ export const Dashboard = ({ activeSlide, setActiveSlide }: { activeSlide: SlideI
 
       {/* Focus Mode Overlay Controls */}
       {isFocus && (
-        <>
-          {/* Floating Atmosphere Palette */}
-          <div style={{ position: 'absolute', top: '2rem', right: '2rem', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-end' }}>
-             <button 
-                onClick={() => setActiveSlide('timer')}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.8rem 1.75rem', borderRadius: '14px', cursor: 'pointer', background: 'var(--accent-color)', color: '#fff', border: 'none', fontWeight: 700, boxShadow: '0 8px 30px rgba(187, 134, 252, 0.4)', transition: 'all 0.3s' }}
-                className="focus-exit-btn"
-              >
-                <Minimize size={20} /> Exit Focus
-              </button>
-
-              <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '280px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <h4 style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800, marginBottom: '0.25rem' }}>Atmosphere</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                  <button onClick={() => changeAtmosphere(null, null)} style={styles.themeBtn}>None</button>
-                  <button onClick={() => changeAtmosphere('youtube', 'mPZkdNFkNps')} style={styles.themeBtn}>Rain</button>
-                  <button onClick={() => changeAtmosphere('youtube', 'jfKfPfyJRdk')} style={styles.themeBtn}>Lo-Fi</button>
-                  <button onClick={() => changeAtmosphere('youtube', 'HAt3vS5xPcs')} style={styles.themeBtn}>Library</button>
-                  <button onClick={() => changeAtmosphere('youtube', '4_E8E6s7X7A')} style={styles.themeBtn}>Space</button>
-                  <button onClick={() => changeAtmosphere('youtube', 'VMAPTo7RVCo')} style={styles.themeBtn}>Jazz</button>
-                </div>
-                
-                <div style={{ marginTop: '0.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                     <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Brightness</label>
-                     <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 700 }}>{ambientBrightness}%</span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min="10" max="100" 
-                    value={ambientBrightness} 
-                    onChange={e => handleBrightnessChange(Number(e.target.value))}
-                    style={{ width: '100%', accentColor: 'var(--accent-color)' }}
-                  />
-                </div>
-
-                <form onSubmit={handleCustomBg} style={{ display: 'flex', marginTop: '0.5rem', gap: '0.4rem' }}>
-                   <input type="text" placeholder="Custom image or YT link" value={customBgUrl} onChange={e => setCustomBgUrl(e.target.value)} style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '0.8rem' }} />
-                   <button type="submit" className="primary-btn" style={{ padding: '0.5rem', borderRadius: '8px', fontSize: '0.8rem' }}>Set</button>
-                </form>
-              </div>
-          </div>
-          <Quotes />
-        </>
+        <FocusMode 
+          onExit={() => setActiveSlide('timer')}
+          ambientBrightness={ambientBrightness}
+          onBrightnessChange={handleBrightnessChange}
+          onAtmosphereChange={changeAtmosphere}
+          customBgUrl={customBgUrl}
+          onCustomBgChange={setCustomBgUrl}
+          onCustomBgSubmit={handleCustomBg}
+          activeSlide={activeSlide}
+          setActiveSlide={setActiveSlide}
+        />
       )}
 
 
@@ -205,11 +173,14 @@ export const Dashboard = ({ activeSlide, setActiveSlide }: { activeSlide: SlideI
 
 const styles = {
   slideCard: {
-    padding: '3rem',
+    padding: '2rem',
     display: 'flex', 
     flexDirection: 'column' as const,
-    height: 'min(calc(100vh - 2rem), 900px)',
+    height: '100%',
     width: '100%',
+    flex: 1,
+    overflow: 'hidden',
+    position: 'relative' as const,
   },
   themeBtn: {
     display: 'flex',

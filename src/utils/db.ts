@@ -226,16 +226,42 @@ export const db = {
   },
 
   // --- Notes ---
-  saveNotes: async (uid: string, content: string) => {
-    await setDoc(doc(firestore, 'userNotes', uid), {
-      content,
+  saveNote: async (uid: string, note: { id: string, title: string, content: string }) => {
+    const noteId = note.id || `note_${Date.now()}`;
+    await setDoc(doc(firestore, `users/${uid}/notes`, noteId), {
+      ...note,
+      id: noteId,
       lastSaved: Date.now()
+    });
+    
+    // Also sync to virtual file system
+    await setDoc(doc(firestore, `users/${uid}/files`, noteId), {
+      id: noteId,
+      name: note.title + '.sfn', // Study FM Note
+      type: 'application/x-studyfm-note',
+      size: note.content.length,
+      uploadDate: Date.now(),
+      storagePath: `virtual/notes/${noteId}`,
     });
   },
 
-  getNotes: async (uid: string): Promise<string | null> => {
-    const docSnap = await getDoc(doc(firestore, 'userNotes', uid));
-    return docSnap.exists() ? docSnap.data().content : null;
+  getNotes: async (uid: string): Promise<any[]> => {
+    const querySnapshot = await getDocs(collection(firestore, `users/${uid}/notes`));
+    const notes: any[] = [];
+    querySnapshot.forEach((doc) => {
+      notes.push(doc.data());
+    });
+    return notes;
+  },
+
+  getNote: async (uid: string, noteId: string): Promise<any | null> => {
+    const docSnap = await getDoc(doc(firestore, `users/${uid}/notes`, noteId));
+    return docSnap.exists() ? docSnap.data() : null;
+  },
+
+  deleteNote: async (uid: string, noteId: string) => {
+    await deleteDoc(doc(firestore, `users/${uid}/notes`, noteId));
+    await deleteDoc(doc(firestore, `users/${uid}/files`, noteId));
   },
 
   // --- Syllabus ---

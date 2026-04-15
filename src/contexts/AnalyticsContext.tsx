@@ -38,6 +38,8 @@ export const AnalyticsProvider = ({ children }: { children: React.ReactNode }) =
   // Load persistence on mount/user change
   useEffect(() => {
     if (user) {
+      // Set loading state
+      setStudyStats(null);
       refreshStats();
       db.getActiveTopic(user.uid).then(data => {
         if (data && data.topic) {
@@ -45,8 +47,14 @@ export const AnalyticsProvider = ({ children }: { children: React.ReactNode }) =
           startTimeRef.current = data.startTime;
         }
       });
+      // Fallback: if still null after 6s, set to empty array to prevent infinite spinner
+      const timeout = setTimeout(() => {
+        setStudyStats(prev => prev === null ? [] : prev);
+      }, 6000);
+      return () => clearTimeout(timeout);
     } else {
-      setStudyStats(null);
+      // No user = empty state, not loading
+      setStudyStats([]);
       setActiveTopic(null);
       startTimeRef.current = null;
     }

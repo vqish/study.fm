@@ -81,6 +81,8 @@ export const Timer = () => {
         setCdTime((prev) => {
           if (prev <= 1) {
             setIsCdActive(false);
+            const totalElapsedMins = Math.ceil(((cdHoursInput * 3600) + (cdMinutesInput * 60) + cdSecondsInput) / 60);
+            saveCurrentSession(totalElapsedMins);
             return 0;
           }
           return prev - 1;
@@ -101,18 +103,7 @@ export const Timer = () => {
     if (pomoPhase === 'focus') {
       const newSessions = sessionsCompleted + 1;
       setSessionsCompleted(newSessions);
-      
-      if (user) {
-         db.addSession({
-           userUid: user.uid,
-           topicId: 'pomodoro_' + Date.now(),
-           topicName: timerTopic,
-           subjectName: timerSubject,
-           minutes: settings.focus
-         }).then(() => {
-           refreshStats();
-         }).catch(console.error);
-      }
+      saveCurrentSession(settings.focus);
 
       if (newSessions % 4 === 0) {
         setPomoPhase('longBreak');
@@ -134,6 +125,22 @@ export const Timer = () => {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const saveCurrentSession = async (mins: number) => {
+    if (!user || mins < 1) return;
+    try {
+      await db.addSession({
+        userUid: user.uid,
+        topicId: mode + '_' + Date.now(),
+        topicName: timerTopic,
+        subjectName: timerSubject,
+        minutes: mins
+      });
+      await refreshStats();
+    } catch (err) {
+      console.error("Failed to save session:", err);
+    }
+  };
+
   const startCountdown = () => {
     const totalSeconds = (cdHoursInput * 3600) + (cdMinutesInput * 60) + cdSecondsInput;
     if (totalSeconds > 0) {
@@ -144,8 +151,8 @@ export const Timer = () => {
 
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', height: '100%', position: 'relative' }}>
-      <div style={{ display: 'flex', gap: '0.4rem', background: 'rgba(0,0,0,0.3)', padding: '0.5rem', borderRadius: '24px', border: '1px solid var(--border-color)', marginTop: '2rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', gap: '2rem' }}>
+      <div style={{ display: 'flex', gap: '0.4rem', background: 'rgba(0,0,0,0.4)', padding: '0.4rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' }}>
         <button onClick={() => setMode('pomodoro')} disabled={isPomoActive || isCdActive || isSwActive} style={{ ...styles.modeBtn, background: mode === 'pomodoro' ? 'var(--accent-color)' : 'transparent', color: mode === 'pomodoro' ? '#fff' : 'var(--text-secondary)' }}>
           Pomodoro
         </button>
@@ -160,22 +167,22 @@ export const Timer = () => {
       <div style={styles.displayBoard}>
         <div style={styles.topSection}>
           {mode === 'pomodoro' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ display: 'flex', gap: '1.5rem' }}>
-                <span onClick={() => {setPomoPhase('focus'); setPomoTime(settings.focus*60); setIsPomoActive(false)}} style={{ ...styles.subMode, color: pomoPhase === 'focus' ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: pomoPhase === 'focus' ? 800 : 500 }}>Focus</span>
-                <span onClick={() => {setPomoPhase('shortBreak'); setPomoTime(settings.shortBreak*60); setIsPomoActive(false)}} style={{ ...styles.subMode, color: pomoPhase === 'shortBreak' ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: pomoPhase === 'shortBreak' ? 800 : 500 }}>Break</span>
-                <span onClick={() => {setPomoPhase('longBreak'); setPomoTime(settings.longBreak*60); setIsPomoActive(false)}} style={{ ...styles.subMode, color: pomoPhase === 'longBreak' ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: pomoPhase === 'longBreak' ? 800 : 500 }}>Long Break</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+              <div style={{ display: 'flex', gap: '2rem' }}>
+                <span onClick={() => {setPomoPhase('focus'); setPomoTime(settings.focus*60); setIsPomoActive(false)}} style={{ ...styles.subMode, color: pomoPhase === 'focus' ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: pomoPhase === 'focus' ? 800 : 600 }}>Focus</span>
+                <span onClick={() => {setPomoPhase('shortBreak'); setPomoTime(settings.shortBreak*60); setIsPomoActive(false)}} style={{ ...styles.subMode, color: pomoPhase === 'shortBreak' ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: pomoPhase === 'shortBreak' ? 800 : 600 }}>Break</span>
+                <span onClick={() => {setPomoPhase('longBreak'); setPomoTime(settings.longBreak*60); setIsPomoActive(false)}} style={{ ...styles.subMode, color: pomoPhase === 'longBreak' ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: pomoPhase === 'longBreak' ? 800 : 600 }}>Long Break</span>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem', opacity: isPomoActive ? 0.3 : 1, transition: 'opacity 0.3s' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', opacity: isPomoActive ? 0.4 : 1, transition: 'all 0.4s' }}>
                  <input type="text" value={timerSubject} onChange={e => setTimerSubject(e.target.value)} disabled={isPomoActive} placeholder="Subject" style={styles.topicInput} />
-                 <input type="text" value={timerTopic} onChange={e => setTimerTopic(e.target.value)} disabled={isPomoActive} placeholder="Task" style={styles.topicInput} />
+                 <input type="text" value={timerTopic} onChange={e => setTimerTopic(e.target.value)} disabled={isPomoActive} placeholder="Session Topic" style={styles.topicInput} />
               </div>
             </div>
           ) : null}
         </div>
 
         {mode === 'countdown' && !isCdActive ? (
-          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '3.5rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', margin: '2rem 0' }}>
             <div style={styles.inputStack}>
               <input type="number" min="0" max="99" value={cdHoursInput} onChange={e => setCdHoursInput(Math.max(0, parseInt(e.target.value)||0))} style={styles.timeInput} />
               <span style={styles.inputLabel}>Hrs</span>
@@ -214,14 +221,20 @@ export const Timer = () => {
           <button className="secondary-btn" onClick={() => {
             if(mode==='pomodoro'){setIsPomoActive(false); setPomoTime(pomoPhase === 'focus' ? settings.focus*60 : pomoPhase === 'shortBreak' ? settings.shortBreak*60 : settings.longBreak*60);}
             if(mode==='countdown'){setIsCdActive(false); setCdTime(cdHoursInput * 3600 + cdMinutesInput * 60 + cdSecondsInput);}
-            if(mode==='stopwatch'){setIsSwActive(false); setSwTime(0);}
+            if(mode==='stopwatch'){
+              if (swTime >= 60) {
+                saveCurrentSession(Math.floor(swTime / 60));
+              }
+              setIsSwActive(false); 
+              setSwTime(0);
+            }
           }} style={styles.resetBtn}><RotateCcw size={24} /></button>
         </div>
 
         {mode === 'pomodoro' && (
-          <div style={{ marginTop: '4rem' }}>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px' }}>
-              Pomodoros: <span style={{ color: 'var(--accent-color)' }}>{sessionsCompleted}</span>
+          <div style={{ marginTop: '2.5rem' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', background: 'rgba(255,193,7,0.1)', padding: '0.4rem 1rem', borderRadius: '12px', color: '#FFC107', border: '1px solid rgba(255,193,7,0.2)' }}>
+              Total sessions: <span style={{ color: '#fff' }}>{sessionsCompleted}</span>
             </div>
           </div>
         )}
@@ -246,21 +259,21 @@ export const Timer = () => {
 };
 
 const styles = {
-  modeBtn: { padding: '0.75rem 1.5rem', borderRadius: '20px', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.3s' },
-  displayBoard: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', width: '100%', flex: 1 },
-  topSection: { height: '60px', marginBottom: '2rem' },
-  subMode: { fontSize: '1rem', cursor: 'pointer', padding: '0.5rem 1rem' },
-  timeText: { fontSize: '12rem', fontWeight: 900, fontFamily: "'Outfit', sans-serif", letterSpacing: '-4px', color: '#fff', marginBottom: '3rem', textShadow: '0 10px 40px rgba(0,0,0,0.5)' },
-  controls: { display: 'flex', gap: '2.5rem', alignItems: 'center' },
-  actionBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: '110px', height: '110px', borderRadius: '50%', boxShadow: '0 10px 30px rgba(187, 134, 252, 0.4)', transition: 'transform 0.2s' },
-  resetBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', width: '70px', height: '70px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' },
-  timeInput: { fontSize: '7.5rem', fontWeight: 900, fontFamily: "'Outfit', sans-serif", background: 'transparent', border: 'none', color: '#fff', width: '160px', textAlign: 'center' as const, outline: 'none', borderBottom: '2px solid rgba(255,255,255,0.1)' },
+  modeBtn: { padding: '0.6rem 1.4rem', borderRadius: '12px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.3s', border: 'none' },
+  displayBoard: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', width: '100%' },
+  topSection: { height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  subMode: { fontSize: '0.95rem', cursor: 'pointer', padding: '0.4rem 0.8rem', transition: 'all 0.2s' },
+  timeText: { fontSize: '9rem', fontWeight: 900, fontFamily: "'Outfit', sans-serif", letterSpacing: '-5px', color: '#fff', textShadow: '0 10px 40px rgba(0,0,0,0.5)', lineHeight: 1 },
+  controls: { display: 'flex', gap: '2rem', alignItems: 'center', marginTop: '2rem' },
+  actionBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: '90px', height: '90px', borderRadius: '50%', boxShadow: '0 10px 30px rgba(187, 134, 252, 0.4)', transition: 'transform 0.2s', border: 'none' },
+  resetBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', width: '56px', height: '56px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', cursor: 'pointer' },
+  timeInput: { fontSize: '6rem', fontWeight: 900, fontFamily: "'Outfit', sans-serif", background: 'transparent', border: 'none', color: '#fff', width: '130px', textAlign: 'center' as const, outline: 'none', borderBottom: '2px solid rgba(255,255,255,0.1)' },
   inputStack: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center' },
-  inputLabel: { fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 800, marginTop: '0.5rem', textTransform: 'uppercase' as const },
-  timeColon: { fontSize: '5rem', fontWeight: 900, color: 'rgba(255,255,255,0.1)', paddingBottom: '2rem' },
+  inputLabel: { fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 800, marginTop: '0.25rem', textTransform: 'uppercase' as const },
+  timeColon: { fontSize: '4rem', fontWeight: 900, color: 'rgba(255,255,255,0.1)', paddingBottom: '1rem' },
   settingRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   settingInput: { width: '80px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', color: '#fff', padding: '0.6rem', borderRadius: '10px', textAlign: 'center' as const },
-  topicInput: { background: 'rgba(0,0,0,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.85rem', outline: 'none' }
+  topicInput: { background: 'rgba(0,0,0,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: '10px', fontSize: '0.85rem', outline: 'none', width: '180px', textAlign: 'center' as const }
 };
 
 

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Navbar } from './Navbar';
+import { MiniPlayer } from '../MusicPlayer/MiniPlayer';
 
 export type SlideId = 'timer' | 'rooms' | 'media' | 'syllabus' | 'notes' | 'flashcards' | 'leaderboard' | 'community' | 'settings' | 'focus' | 'analytics';
 
@@ -41,9 +42,9 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
 
   return (
     <div style={styles.container}>
-      <div className="global-bg-layer" />
+      <div className="global-bg-layer" style={{ opacity: isFocusMode && bgData.type && bgData.url ? 0 : 0.35 }} />
       
-      {bgData.type && bgData.url && (
+      {isFocusMode && bgData.type && bgData.url && (
         <div style={{ position: 'absolute', inset: 0, zIndex: -2, overflow: 'hidden', pointerEvents: 'none', animation: 'fadeIn 1s ease' }}>
           {bgData.type === 'youtube' ? (
              <iframe
@@ -70,20 +71,20 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
           </div>
 
           <nav style={styles.nav(isMobile)}>
-            <NavItem icon={<TimerIcon size={isMobile ? 18 : 22} />} label="Focus Timer" active={activeSlide === 'timer'} onClick={() => setActiveSlide('timer')} />
-            <NavItem icon={<MessageSquare size={isMobile ? 18 : 22} />} label="Study Rooms" active={activeSlide === 'rooms'} onClick={() => setActiveSlide('rooms')} />
-            <NavItem icon={<Music size={isMobile ? 18 : 22} />} label="Music" active={activeSlide === 'media'} onClick={() => setActiveSlide('media')} />
-            <NavItem icon={<BookOpen size={isMobile ? 18 : 22} />} label="Planner" active={activeSlide === 'syllabus'} onClick={() => setActiveSlide('syllabus')} />
-            <NavItem icon={<FileText size={isMobile ? 18 : 22} />} label="Notes" active={activeSlide === 'notes'} onClick={() => setActiveSlide('notes')} />
-            <NavItem icon={<BarChart3 size={isMobile ? 18 : 22} />} label="Analytics" active={activeSlide === 'analytics'} onClick={() => setActiveSlide('analytics')} />
-            <NavItem icon={<Users size={isMobile ? 18 : 22} />} label="Community" active={activeSlide === 'community'} onClick={() => setActiveSlide('community')} />
+            <NavItem icon={<TimerIcon size={22} />} label="Focus Timer" active={activeSlide === 'timer'} onClick={() => setActiveSlide('timer')} />
+            <NavItem icon={<MessageSquare size={22} />} label="Study Rooms" active={activeSlide === 'rooms'} onClick={() => setActiveSlide('rooms')} />
+            <NavItem icon={<Music size={22} />} label="Music" active={activeSlide === 'media'} onClick={() => setActiveSlide('media')} />
+            <NavItem icon={<BookOpen size={22} />} label="Planner" active={activeSlide === 'syllabus'} onClick={() => setActiveSlide('syllabus')} />
+            <NavItem icon={<FileText size={22} />} label="Notes" active={activeSlide === 'notes'} onClick={() => setActiveSlide('notes')} />
+            <NavItem icon={<BarChart3 size={22} />} label="Analytics" active={activeSlide === 'analytics'} onClick={() => setActiveSlide('analytics')} />
+            <NavItem icon={<Users size={22} />} label="Community" active={activeSlide === 'community'} onClick={() => setActiveSlide('community')} />
             {!isMobile && (
               <>
                 <NavItem icon={<Layers size={22} />} label="Flashcards" active={activeSlide === 'flashcards'} onClick={() => setActiveSlide('flashcards')} />
                 <NavItem icon={<Trophy size={22} />} label="Leaderboard" active={activeSlide === 'leaderboard'} onClick={() => setActiveSlide('leaderboard')} />
               </>
             )}
-            <NavItem icon={<Settings size={isMobile ? 18 : 22} />} label="Settings" active={activeSlide === 'settings'} onClick={() => setActiveSlide('settings')} />
+            <NavItem icon={<Settings size={22} />} label="Settings" active={activeSlide === 'settings'} onClick={() => setActiveSlide('settings')} />
           </nav>
 
           {!isMobile && (
@@ -107,6 +108,7 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
           </div>
         </main>
       </div>
+      <MiniPlayer activeSlide={activeSlide} setActiveSlide={setActiveSlide} />
     </div>
   );
 };
@@ -161,7 +163,7 @@ const styles = {
   nav: (isMobile: boolean) => ({
     display: 'flex',
     flexDirection: isMobile ? 'row' as const : 'column' as const,
-    gap: isMobile ? '0.2rem' : '0.8rem',
+    gap: isMobile ? '0.25rem' : '1.25rem',
     alignItems: 'center',
     justifyContent: isMobile ? 'space-around' : 'flex-start',
     width: '100%',
@@ -196,21 +198,25 @@ const styles = {
     height: '100vh',
     position: 'relative' as const,
     paddingBottom: isMobile ? '70px' : '0',
+    overflow: 'hidden',
   }),
   main: (isFocusMode: boolean, isMobile: boolean) => ({
     flex: 1,
-    overflowY: 'auto' as const,
-    overflowX: 'hidden' as const,
-    padding: isFocusMode ? '0' : isMobile ? '1rem' : '1rem 2rem 2rem 2rem',
-    transition: 'padding 0.4s ease',
+    overflow: 'hidden' as const,
+    padding: isFocusMode ? '0' : isMobile ? '1rem' : '2rem',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
   }),
   contentWrapper: (isMobile: boolean) => ({
-    minHeight: '100%',
+    height: 'min(calc(100vh - 120px), 900px)',
     width: '100%',
-    maxWidth: isMobile ? '100%' : '1200px',
+    maxWidth: isMobile ? '100%' : '1100px',
     margin: '0 auto',
     display: 'flex',
     flexDirection: 'column' as const,
+    position: 'relative' as const,
   })
 };
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowLeft, ArrowRight, RotateCcw, Play, Check } from 'lucide-react';
 
 type Flashcard = {
   id: string;
@@ -39,16 +39,13 @@ export const Flashcards = () => {
     setEditingId(card.id);
     setFrontText(card.front);
     setBackText(card.back);
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setFrontText('');
-    setBackText('');
+    setViewMode('list'); 
   };
 
   const deleteCard = (id: string) => {
-    setCards(cards.filter(c => c.id !== id));
+    if (confirm('Delete this card?')) {
+      setCards(cards.filter(c => c.id !== id));
+    }
   };
 
   const startReview = () => {
@@ -60,186 +57,171 @@ export const Flashcards = () => {
 
   const nextCard = () => {
     setIsFlipped(false);
-    setTimeout(() => setCurrentIndex(prev => (prev + 1) % cards.length), 150);
+    setTimeout(() => setCurrentIndex(prev => (prev + 1) % cards.length), 200);
   };
 
   const prevCard = () => {
     setIsFlipped(false);
-    setTimeout(() => setCurrentIndex(prev => (prev - 1 + cards.length) % cards.length), 150);
+    setTimeout(() => setCurrentIndex(prev => (prev - 1 + cards.length) % cards.length), 200);
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', gap: '1.5rem', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
       
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* 1. Header Area - Fixed Height */}
+      <div style={styles.header}>
         <div>
-          <h2 style={{ fontSize: '1.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Flashcards</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Master concepts through active recall.</p>
+          <h2 style={styles.title}>Flashcards</h2>
+          <p style={styles.subtitle}>Card set: {cards.length} items</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
           {viewMode === 'review' ? (
-            <button className="secondary-btn" onClick={() => setViewMode('list')} style={{ padding: '0.6rem 1.25rem', borderRadius: '10px' }}>Back to List</button>
+            <button className="secondary-btn" onClick={() => setViewMode('list')} style={styles.headerBtn}>
+              Back to List
+            </button>
           ) : (
-            <button className="primary-btn" onClick={startReview} disabled={cards.length === 0} style={{ padding: '0.6rem 1.25rem', opacity: cards.length === 0 ? 0.5 : 1, display: 'flex', alignItems: 'center', borderRadius: '10px' }}>
-              <PlayIcon /> Start Review ({cards.length})
+            <button className="primary-btn" onClick={startReview} disabled={cards.length === 0} style={{ ...styles.headerBtn, opacity: cards.length === 0 ? 0.5 : 1 }}>
+              <Play size={16} fill="white" /> Start Review
             </button>
           )}
         </div>
       </div>
 
-      {viewMode === 'list' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflowY: 'auto', gap: '1.5rem', paddingRight: '0.5rem' }}>
-          
-          {/* Create/Edit Form */}
-          <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 500 }}>{editingId ? 'Edit Flashcard' : 'Create New Flashcard'}</h3>
-            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: '250px' }}>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'block' }}>Front (Concept / Question)</label>
-                <textarea 
-                  value={frontText} onChange={e => setFrontText(e.target.value)} 
-                  style={{ ...styles.input, height: '80px' }} placeholder="E.g. What is the powerhouse of the cell?"
-                />
-              </div>
-              <div style={{ flex: 1, minWidth: '250px' }}>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'block' }}>Back (Definition / Answer)</label>
-                <textarea 
-                  value={backText} onChange={e => setBackText(e.target.value)} 
-                  style={{ ...styles.input, height: '80px' }} placeholder="E.g. Mitochondria"
-                />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '1rem', alignSelf: 'flex-end', marginTop: '0.5rem' }}>
-              {editingId && <button className="secondary-btn" onClick={cancelEdit} style={{ padding: '0.6rem 1.25rem', borderRadius: '8px' }}>Cancel</button>}
-              <button className="primary-btn" onClick={handleSave} disabled={!frontText || !backText} style={{ padding: '0.6rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: (!frontText || !backText) ? 0.5 : 1, borderRadius: '8px' }}>
-                {editingId ? <Edit2 size={16} /> : <Plus size={16} />}
-                {editingId ? 'Save Edits' : 'Add Card'}
-              </button>
-            </div>
-          </div>
-
-          {/* List */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
-            {cards.map(card => (
-              <FlashcardListItem key={card.id} card={card} onEdit={() => startEdit(card)} onDelete={() => deleteCard(card.id)} />
-            ))}
-            {cards.length === 0 && <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)', gridColumn: '1 / -1', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '16px' }}>No flashcards yet. Create some to start reviewing!</div>}
-          </div>
-
-        </div>
-      ) : (
-        // Review Mode with 3D Flip Animation
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, animation: 'fadeIn 0.3s' }}>
-          <div style={{ marginBottom: '2.5rem', fontSize: '1.1rem', fontWeight: 500, color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.3)', padding: '0.5rem 1.5rem', borderRadius: '20px' }}>
-            Card {currentIndex + 1} of {cards.length}
-          </div>
-          
-          <div style={{ perspective: '1200px', width: '100%', maxWidth: '650px', height: '420px' }}>
-            <div style={{ 
-              width: '100%', height: '100%', position: 'relative', 
-              transition: 'transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1)', 
-              transformStyle: 'preserve-3d',
-              transform: isFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)'
-            }}>
-              
-              {/* Card Front */}
-              <div className="glass-panel" style={{ 
-                ...styles.cardFace,
-                backfaceVisibility: 'hidden',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                padding: '4rem', cursor: 'pointer', textAlign: 'center', background: 'var(--surface-color)'
-              }} onClick={() => setIsFlipped(true)}>
-                <p style={{ fontSize: '1.1rem', color: 'var(--accent-color)', marginBottom: '1.5rem', fontWeight: 600, letterSpacing: '2px' }}>FRONT</p>
-                <h3 style={{ fontSize: '2.5rem', fontWeight: 500, lineHeight: 1.4 }}>{cards[currentIndex]?.front}</h3>
-                <p style={{ position: 'absolute', bottom: '2.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><RotateCcw size={14} /> Click to flip over</p>
-              </div>
-
-              {/* Card Back */}
-              <div className="glass-panel" style={{ 
-                ...styles.cardFace,
-                backfaceVisibility: 'hidden',
-                transform: 'rotateX(180deg)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                padding: '4rem', cursor: 'pointer', textAlign: 'center',
-                background: 'rgba(187, 134, 252, 0.1)',
-                border: '1px solid rgba(187, 134, 252, 0.25)'
-              }} onClick={() => setIsFlipped(false)}>
-                <p style={{ fontSize: '1.1rem', color: 'var(--accent-color)', marginBottom: '1.5rem', fontWeight: 600, letterSpacing: '2px' }}>BACK</p>
-                <h3 style={{ fontSize: '2.5rem', fontWeight: 500, lineHeight: 1.4 }}>{cards[currentIndex]?.back}</h3>
-              </div>
-
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '2.5rem', marginTop: '3.5rem', alignItems: 'center' }}>
-            <button className="secondary-btn" onClick={prevCard} style={{ padding: '1.25rem', borderRadius: '50%', display: 'flex', background: 'rgba(255,255,255,0.05)' }}><ArrowLeft size={24} /></button>
-            <button onClick={() => setIsFlipped(!isFlipped)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'transparent', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: '1rem', transition: 'color 0.2s' }} onMouseOver={e => e.currentTarget.style.color='var(--text-primary)'} onMouseOut={e => e.currentTarget.style.color='var(--text-secondary)'}><RotateCcw size={20} /> Flip Card</button>
-            <button className="secondary-btn" onClick={nextCard} style={{ padding: '1.25rem', borderRadius: '50%', display: 'flex', background: 'rgba(255,255,255,0.05)' }}><ArrowRight size={24} /></button>
-          </div>
-
-        </div>
-      )}
-    </div>
-  );
-};
-
-const PlayIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
-    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-  </svg>
-);
-
-const styles = {
-  input: {
-    width: '100%',
-    padding: '0.85rem',
-    background: 'rgba(0,0,0,0.3)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    color: 'var(--text-primary)',
-    fontSize: '1rem',
-    fontFamily: 'inherit',
-    resize: 'vertical' as const
-  },
-  iconBtn: {
-    background: 'rgba(255,255,255,0.08)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    padding: '0.5rem',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    display: 'flex',
-    transition: 'background 0.2s'
-  },
-  cardFace: {
-    position: 'absolute' as const,
-    width: '100%',
-    height: '100%',
-    borderRadius: '24px',
-    boxShadow: '0 16px 40px rgba(0,0,0,0.4)',
-  }
-};
-
-const FlashcardListItem = ({ card, onEdit, onDelete }: { card: Flashcard, onEdit: () => void, onDelete: () => void }) => {
-  const [revealed, setRevealed] = useState(false);
-  return (
-    <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', position: 'relative', cursor: 'pointer', transition: 'background 0.2s, transform 0.2s' }} onClick={() => setRevealed(!revealed)} onMouseOver={e=>{e.currentTarget.style.background='rgba(255,255,255,0.05)'; e.currentTarget.style.transform='translateY(-2px)'}} onMouseOut={e=>{e.currentTarget.style.background='var(--surface-color)'; e.currentTarget.style.transform='translateY(0)'}}>
-      <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
-        <button onClick={(e) => { e.stopPropagation(); onEdit(); }} style={styles.iconBtn}><Edit2 size={14} color="var(--text-secondary)" /></button>
-        <button onClick={(e) => { e.stopPropagation(); onDelete(); }} style={styles.iconBtn}><Trash2 size={14} color="var(--danger-color)" /></button>
-      </div>
-      <div style={{ paddingRight: '4rem' }}>
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', letterSpacing: '1px' }}>FRONT <span style={{ textTransform: 'none', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', marginLeft: '6px' }}>(Click to {revealed ? 'hide' : 'reveal'})</span></p>
-        <p style={{ fontWeight: 500, marginBottom: revealed ? '1.25rem' : '0', lineHeight: 1.5, fontSize: '1.05rem' }}>{card.front}</p>
+      {/* 2. Main Content Area - Expands to fill available height & Scrolls internally */}
+      <div className="module-scroll-area" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         
-        {revealed && (
-          <div style={{ animation: 'fadeIn 0.3s' }}>
-            <div style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.1)', marginBottom: '1rem' }} />
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', letterSpacing: '1px' }}>BACK</p>
-            <p style={{ color: 'var(--text-primary)', lineHeight: 1.5, fontSize: '1.05rem' }}>{card.back}</p>
+        {viewMode === 'list' ? (
+          <div style={styles.listContainer}>
+            
+            {/* Create/Edit Form */}
+            <div className="glass-panel" style={styles.formPanel}>
+              <h3 style={styles.formTitle}>{editingId ? 'Modify Concept' : 'Add New Concept'}</h3>
+              <div style={styles.formRow}>
+                <div style={{ flex: 1 }}>
+                  <label style={styles.label}>Concept / Question</label>
+                  <textarea value={frontText} onChange={e => setFrontText(e.target.value)} style={styles.textarea} placeholder="e.g. Mitochondria" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={styles.label}>Definition / Answer</label>
+                  <textarea value={backText} onChange={e => setBackText(e.target.value)} style={styles.textarea} placeholder="e.g. Powerhouse of the cell" />
+                </div>
+              </div>
+              <div style={styles.formActions}>
+                {editingId && <button onClick={() => setEditingId(null)} className="secondary-btn" style={styles.formBtn}>Cancel</button>}
+                <button onClick={handleSave} className="primary-btn" disabled={!frontText || !backText} style={styles.formBtn}>
+                  {editingId ? <Check size={18} /> : <Plus size={18} />} {editingId ? 'Save Edits' : 'Add Card'}
+                </button>
+              </div>
+            </div>
+
+            {/* Grid List */}
+            <div style={styles.grid}>
+              {cards.map(card => (
+                <FlashcardItem key={card.id} card={card} onEdit={() => startEdit(card)} onDelete={() => deleteCard(card.id)} />
+              ))}
+              {cards.length === 0 && (
+                <div style={styles.emptyState}>No cards yet. Start by adding one above.</div>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Review Mode - Centered Card System */
+          <div style={styles.reviewContainer}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: '800px', margin: '0 auto' }}>
+              
+              <div style={styles.progressText}>Card {currentIndex + 1} of {cards.length}</div>
+              
+              {/* Card Container - Responsive with clamp */}
+              <div style={styles.cardContainer}>
+                <div 
+                  style={{ 
+                    ...styles.cardInner,
+                    transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                  }}
+                  onClick={() => setIsFlipped(!isFlipped)}
+                >
+                  {/* Front */}
+                  <div className="glass-panel" style={styles.cardFace}>
+                    <div style={styles.faceLabel}>CONCEPT</div>
+                    <div style={styles.cardText}>{cards[currentIndex].front}</div>
+                    <div style={styles.flipNotice}><RotateCcw size={14} /> Click to reveal answer</div>
+                  </div>
+
+                  {/* Back */}
+                  <div className="glass-panel" style={{ ...styles.cardFace, ...styles.cardBack }}>
+                    <div style={styles.faceLabel}>DEFINITION</div>
+                    <div style={styles.cardText}>{cards[currentIndex].back}</div>
+                    <div style={styles.flipNotice}><RotateCcw size={14} /> Click to hide answer</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Controls */}
+              <div style={styles.reviewControls}>
+                <button onClick={prevCard} className="secondary-btn" style={styles.navBtn}><ArrowLeft size={24} /></button>
+                <div style={{ width: '40px' }} />
+                <button onClick={nextCard} className="secondary-btn" style={styles.navBtn}><ArrowRight size={24} /></button>
+              </div>
+
+            </div>
           </div>
         )}
       </div>
     </div>
   );
+};
+
+const FlashcardItem = ({ card, onEdit, onDelete }: { card: Flashcard, onEdit: () => void, onDelete: () => void }) => {
+  const [showBack, setShowBack] = useState(false);
+  return (
+    <div className="glass-panel" style={styles.item} onClick={() => setShowBack(!showBack)}>
+       <div style={styles.itemActions}>
+          <button onClick={(e) => { e.stopPropagation(); onEdit(); }} style={styles.miniBtn}><Edit2 size={14} /></button>
+          <button onClick={(e) => { e.stopPropagation(); onDelete(); }} style={{ ...styles.miniBtn, color: 'var(--danger-color)' }}><Trash2 size={14} /></button>
+       </div>
+       <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={styles.itemLabel}>FRONT</p>
+          <h4 style={styles.itemTitle}>{card.front}</h4>
+          {showBack && (
+            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', animation: 'fadeIn 0.2s' }}>
+               <p style={styles.itemLabel}>BACK</p>
+               <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)' }}>{card.back}</p>
+            </div>
+          )}
+       </div>
+    </div>
+  );
+};
+
+const styles = {
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', flexShrink: 0 },
+  title: { fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.5px' },
+  subtitle: { color: 'var(--text-secondary)', fontSize: '0.85rem' },
+  headerBtn: { padding: '0.65rem 1.25rem', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' },
+  listContainer: { display: 'flex', flexDirection: 'column' as const, gap: '1.5rem', paddingBottom: '2rem' },
+  formPanel: { padding: '1.75rem', borderRadius: '24px', display: 'flex', flexDirection: 'column' as const, gap: '1.25rem' },
+  formTitle: { fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent-color)' },
+  formRow: { display: 'flex', gap: '1.5rem', flexWrap: 'wrap' as const },
+  label: { display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase' as const, letterSpacing: '1px' },
+  textarea: { width: '100%', height: '80px', borderRadius: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '1rem', fontSize: '0.95rem', outline: 'none', resize: 'none' as const },
+  formActions: { display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' },
+  formBtn: { padding: '0.65rem 1.5rem', borderRadius: '10px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' },
+  item: { padding: '1.5rem', borderRadius: '20px', position: 'relative' as const, cursor: 'pointer', transition: 'all 0.2s', display: 'flex' },
+  itemActions: { position: 'absolute' as const, top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' },
+  miniBtn: { padding: '0.5rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)' },
+  itemLabel: { fontSize: '0.65rem', fontWeight: 800, color: 'var(--accent-color)', marginBottom: '0.25rem', letterSpacing: '1px' },
+  itemTitle: { fontSize: '1.1rem', fontWeight: 600, lineHeight: 1.4 },
+  emptyState: { gridColumn: '1 / -1', textAlign: 'center' as const, padding: '4rem', opacity: 0.3, border: '2px dashed #fff', borderRadius: '24px' },
+  reviewContainer: { flex: 1, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' },
+  progressText: { fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.03)', padding: '0.4rem 1rem', borderRadius: '20px', marginBottom: '2rem' },
+  cardContainer: { width: 'min(90%, 600px)', height: 'min(60vh, 380px)', perspective: '1200px' },
+  cardInner: { width: '100%', height: '100%', position: 'relative' as const, transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)', transformStyle: 'preserve-3d' as const, cursor: 'pointer' },
+  cardFace: { position: 'absolute' as const, width: '100%', height: '100%', backfaceVisibility: 'hidden' as const, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', padding: '3rem', textAlign: 'center' as const, borderRadius: '32px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 50px rgba(0,0,0,0.3)' },
+  cardBack: { transform: 'rotateY(180deg)', background: 'rgba(187, 134, 252, 0.05)' },
+  faceLabel: { position: 'absolute' as const, top: '2.5rem', fontSize: '0.7rem', fontWeight: 800, color: 'var(--accent-color)', letterSpacing: '3px' },
+  cardText: { fontSize: 'max(1.5rem, 4vw)', fontWeight: 700, lineHeight: 1.3 },
+  flipNotice: { position: 'absolute' as const, bottom: '2.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' },
+  reviewControls: { display: 'flex', alignItems: 'center', marginTop: '3rem' },
+  navBtn: { width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }
 };

@@ -46,16 +46,16 @@ export const Settings = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', gap: '2rem' }}>
-      <div>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', gap: '1.5rem', overflow: 'hidden' }}>
+      <div style={{ flexShrink: 0 }}>
         <h2 style={{ fontSize: '1.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Profile & Settings</h2>
         <p style={{ color: 'var(--text-secondary)' }}>Manage your account preferences and study bio.</p>
       </div>
 
-      <div style={{ display: 'flex', gap: '2rem', flex: 1, overflowY: 'auto', flexWrap: 'wrap', alignContent: 'flex-start', paddingBottom: '2rem' }}>
+      <div style={{ display: 'flex', gap: '2rem', flex: 1, overflowY: 'auto', flexWrap: 'wrap', alignContent: 'flex-start', paddingBottom: '1rem' }}>
         
         {/* Profile Card */}
-        <div className="glass-panel" style={{ flex: 1, minWidth: '350px', padding: '2.5rem 2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', borderRadius: '24px', position: 'relative' }}>
+        <div className="glass-panel" style={{ flex: 1, minWidth: '320px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', borderRadius: '24px', position: 'relative' }}>
           
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
             <div style={{ width: '110px', height: '110px', borderRadius: '50%', background: 'linear-gradient(45deg, var(--accent-color), #03DAC6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 800, color: '#fff', boxShadow: '0 8px 32px rgba(187, 134, 252, 0.3)' }}>
@@ -119,7 +119,7 @@ export const Settings = () => {
         </div>
 
         {/* Settings Toggles */}
-        <div className="glass-panel" style={{ flex: 1.5, minWidth: '400px', padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '2.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="glass-panel" style={{ flex: 1.5, minWidth: '350px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <div>
             <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.2rem', marginBottom: '1.5rem', color: 'var(--accent-color)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}><Paintbrush size={20} /> Appearance</h4>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>

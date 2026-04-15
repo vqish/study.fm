@@ -90,6 +90,13 @@ export const AuthModal = ({ onClose }: { onClose: () => void }) => {
           </p>
         </div>
 
+        {/* Firebase Config Warning */}
+        {(import.meta.env.VITE_FIREBASE_API_KEY === 'your_api_key_here' || !import.meta.env.VITE_FIREBASE_API_KEY) && (
+          <div style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', marginBottom: '1rem', fontSize: '0.82rem', color: '#ff8a8a', lineHeight: 1.5 }}>
+            ⚠️ <strong>Firebase not configured.</strong> Add your real API keys in <code style={{ background: 'rgba(255,255,255,0.1)', padding: '1px 4px', borderRadius: '4px' }}>.env</code> or Vercel environment variables. Login will not work until this is fixed.
+          </div>
+        )}
+
         {/* Google Login */}
         <button 
           onClick={handleGoogleLogin} 

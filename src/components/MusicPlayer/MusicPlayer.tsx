@@ -77,7 +77,7 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
 
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', gap: '1.5rem', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', gap: '1.5rem', position: 'relative', overflow: 'hidden' }}>
       {!isFocus && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -119,6 +119,20 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
                 </button>
               ))}
             </div>
+
+            {user?.settings?.playlists?.length! > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '2rem' }}>
+                <h4 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>Recently Played</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {user?.settings?.playlists?.map((pl, idx) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80%' }}>{pl}</span>
+                        <button onClick={() => { setUrl(pl); }} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer' }}><Play size={14} /></button>
+                      </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -171,19 +185,6 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
         @keyframes eq { 0% { height: 10px; } 100% { height: 40px; } }
       `}</style>
 
-      {user?.settings?.playlists?.length! > 0 && (
-         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h4 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>Recently Played</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-               {user?.settings?.playlists.map((pl, idx) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                     <span style={{ fontSize: '0.85rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80%' }}>{pl}</span>
-                     <button onClick={() => { setUrl(pl); }} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer' }}><Play size={14} /></button>
-                  </div>
-               ))}
-            </div>
-         </div>
-      )}
     </div>
   );
 };

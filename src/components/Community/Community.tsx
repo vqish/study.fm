@@ -37,39 +37,43 @@ export const Community = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.5px' }}>Community</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Connect with real people studying around the globe.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.5px', margin: 0 }}>Community</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>Connect with real people studying around the globe.</p>
         </div>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', minWidth: '320px' }}>
           <Search size={18} color="var(--text-secondary)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
           <input 
             type="text" 
-            placeholder="Find study buddies by major or country..." 
+            placeholder="Find study buddies..." 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            style={{ padding: '0.9rem 1rem 0.9rem 3rem', borderRadius: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', width: '320px', outline: 'none', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }} 
-            onFocus={e => { e.currentTarget.style.width='420px'; e.currentTarget.style.borderColor='var(--accent-color)'; }} 
-            onBlur={e => { e.currentTarget.style.width='320px'; e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'; }} 
+            style={{ padding: '0.75rem 1rem 0.75rem 3rem', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', width: '100%', outline: 'none', transition: 'border-color 0.3s' }} 
+            onFocus={e => e.currentTarget.style.borderColor='var(--accent-color)'} 
+            onBlur={e => e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'} 
           />
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem', overflowY: 'auto', paddingBottom: '2.5rem', flex: 1, alignContent: 'flex-start' }}>
+      <div className="module-scroll-area" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {loading ? (
-          <div style={{ gridColumn: '1 / -1', padding: '5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Loader2 size={40} color="var(--accent-color)" style={{ animation: 'spin 1.5s linear infinite' }} />
+          <div style={{ padding: '4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+            <Loader2 size={32} color="var(--accent-color)" style={{ animation: 'spin 1.5s linear infinite' }} />
           </div>
         ) : filteredUsers.length > 0 ? (
-          filteredUsers.map((u) => (
-            <UserCard key={u.uid} userProfile={u} />
-          ))
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', paddingBottom: '2rem', alignContent: 'flex-start' }}>
+            {filteredUsers.map((u) => (
+              <UserCard key={u.uid} userProfile={u} />
+            ))}
+          </div>
         ) : (
-          <div style={{ gridColumn: '1 / -1', padding: '5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-            <Users size={64} style={{ opacity: 0.3, marginBottom: '1.5rem' }} />
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 600, color: 'var(--text-primary)' }}>No students found</h3>
-            <p style={{ marginTop: '0.5rem', fontSize: '1rem', textAlign: 'center' }}>We couldn't find anyone matching "{searchQuery}" in the community.</p>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+            <div className="glass-panel" style={{ padding: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', borderRadius: '24px', maxWidth: '400px', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)' }}>
+              <Users size={48} style={{ color: 'var(--accent-color)', marginBottom: '1rem', opacity: 0.8 }} />
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No students found</h3>
+              <p style={{ fontSize: '0.9rem', margin: 0 }}>We couldn't find anyone matching "{searchQuery}".</p>
+            </div>
           </div>
         )}
       </div>
