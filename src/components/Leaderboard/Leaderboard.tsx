@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Trophy, Medal, Star, Clock, Users, RefreshCw, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { db, UserProfile } from '../../utils/db';
+import { db } from '../../utils/db';
+import type { UserProfile } from '../../utils/db';
 
 function getTimeAgo(timestamp: number): string {
   const diff = Date.now() - timestamp;

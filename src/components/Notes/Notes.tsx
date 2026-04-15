@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Video, Mic, PenTool, CheckSquare, Trash2, Eraser, Upload, FileText, Download, Eye, FolderOpen, X, Cloud, CloudOff, Loader2 } from 'lucide-react';
+import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Video, Mic, PenTool, CheckSquare, Trash2, Eraser, Upload, FileText, Download, Eye, FolderOpen, X, Cloud, CloudOff, Loader2, Plus } from 'lucide-react';
 import { saveFile, getAllFiles, deleteFile, downloadFile, formatFileSize, type StoredFile } from '../../utils/fileStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../utils/db';
@@ -57,12 +57,18 @@ export const Notes = () => {
     };
 
     loadContent();
-    loadFiles();
+  }, [user]);
+
+  // Load files separately to ensure they refresh when user changes
+  useEffect(() => {
+    if (user) loadFiles();
+    else setUploadedFiles([]);
   }, [user]);
 
   const loadFiles = async () => {
+    if (!user) return;
     try {
-      const files = await getAllFiles();
+      const files = await getAllFiles(user.uid);
       setUploadedFiles(files.sort((a, b) => b.uploadDate - a.uploadDate));
     } catch (err) {
       console.error('Failed to load files:', err);
@@ -71,7 +77,7 @@ export const Notes = () => {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0 || !user) return;
     setIsUploading(true);
     try {
       for (const file of Array.from(files)) {
@@ -79,23 +85,25 @@ export const Notes = () => {
           alert(`File "${file.name}" is too large. Max 50MB.`);
           continue;
         }
-        await saveFile(file);
+        await saveFile(file, user.uid);
       }
       await loadFiles();
-    } catch (err) {
-      alert('Failed to upload file. Please try again.');
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      alert(`Failed to upload file: ${err.message || 'Unknown error'}. Make sure your .env keys and Storage rules are correct.`);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleDeleteFile = async (id: string) => {
-    if (!confirm('Delete this file?')) return;
-    await deleteFile(id);
+  const handleDeleteFile = async (file: any) => {
+    if (!user || !confirm('Delete this file permanently?')) return;
+    await deleteFile(file, user.uid);
     await loadFiles();
-    if (previewFile?.id === id) setPreviewFile(null);
+    if (previewFile?.id === file.id) setPreviewFile(null);
   };
+
 
   const syncToCloud = () => {
     if (!user || !editorRef.current) return;
@@ -275,8 +283,12 @@ export const Notes = () => {
                     {file.preview && (
                       <button onClick={() => setPreviewFile(file)} style={iconBtnStyle} title="Preview"><Eye size={16} /></button>
                     )}
+                    <button onClick={() => {
+                        const html = file.preview ? `<br/><img src="${file.preview}" alt="${file.name}" style="max-width: 100%; border-radius: 8px;"/><br/>` : `<br/><a href="${file.url}" target="_blank">📎 ${file.name}</a><br/>`;
+                        formatDoc('insertHTML', html);
+                    }} style={iconBtnStyle} title="Attach to Note"><Plus size={16} /></button>
                     <button onClick={() => downloadFile(file)} style={iconBtnStyle} title="Download"><Download size={16} /></button>
-                    <button onClick={() => handleDeleteFile(file.id)} style={{ ...iconBtnStyle, color: 'var(--danger-color)' }} title="Delete"><Trash2 size={16} /></button>
+                    <button onClick={() => handleDeleteFile(file)} style={{ ...iconBtnStyle, color: 'var(--danger-color)' }} title="Delete"><Trash2 size={16} /></button>
                   </div>
                 </div>
               ))}
@@ -294,8 +306,8 @@ export const Notes = () => {
           <button onClick={insertCheckbox} style={toolbarStyles.toolbarBtn} title="Checkbox"><CheckSquare size={18} /></button>
           <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', height: '20px', margin: '0 0.5rem' }} />
           <button onClick={insertLink} style={toolbarStyles.toolbarBtn} title="Link"><LinkIcon size={18} /></button>
-          <button onClick={insertImage} style={toolbarStyles.toolbarBtn} title="Image"><ImageIcon size={18} /></button>
-          <button onClick={insertVideo} style={toolbarStyles.toolbarBtn} title="Video"><Video size={18} /></button>
+          <button onClick={insertImage} style={toolbarStyles.toolbarBtn} title="Image URL"><ImageIcon size={18} /></button>
+          <button onClick={insertVideo} style={toolbarStyles.toolbarBtn} title="Video Embed"><Video size={18} /></button>
           <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', height: '20px', margin: '0 0.5rem' }} />
           <button 
             onClick={toggleRecording} 
@@ -309,6 +321,7 @@ export const Notes = () => {
           <div 
             ref={editorRef}
             contentEditable 
+            suppressContentEditableWarning={true}
             style={{ width: '100%', minHeight: '100%', padding: '2rem 3rem', outline: 'none', color: 'var(--text-primary)', lineHeight: 1.7, fontSize: '1.05rem' }}
             onInput={saveToLocal}
             onBlur={saveSelection}
@@ -318,6 +331,33 @@ export const Notes = () => {
           </div>
         </div>
       </div>
+
+      {/* Preview Modal */}
+      {previewFile && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+           <div style={{ position: 'absolute', top: '2rem', right: '2rem', display: 'flex', gap: '1rem' }}>
+              <button className="primary-btn" onClick={() => downloadFile(previewFile)}>Download</button>
+              <button onClick={() => setPreviewFile(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: '0.8rem', borderRadius: '12px', cursor: 'pointer' }}><X size={20} /></button>
+           </div>
+           
+           <div style={{ maxWidth: '90vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {previewFile.type.startsWith('image/') ? (
+                 <img src={previewFile.url} alt={previewFile.name} style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} />
+              ) : previewFile.type.startsWith('video/') ? (
+                 <video src={previewFile.url} controls autoPlay style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '12px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} />
+              ) : previewFile.type === 'application/pdf' ? (
+                 <iframe src={previewFile.url} style={{ width: '80vw', height: '80vh', border: 'none', borderRadius: '12px', background: '#fff' }} />
+              ) : (
+                 <div className="glass-panel" style={{ padding: '4rem', textAlign: 'center', borderRadius: '24px' }}>
+                    <FileText size={64} style={{ marginBottom: '1.5rem', color: 'var(--accent-color)' }} />
+                    <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{previewFile.name}</h3>
+                    <p style={{ color: 'var(--text-secondary)' }}>No native preview available for this file type.</p>
+                 </div>
+              )}
+           </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>

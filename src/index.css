@@ -27,6 +27,21 @@
   --accent-color-hover: #00f2fe;
 }
 
+[data-theme="light"] {
+  --bg-color: #f8fafc;
+  --bg-image: url("https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&q=80");
+  --surface-color: rgba(255, 255, 255, 0.88);
+  --surface-color-hover: rgba(255, 255, 255, 0.95);
+  --border-color: rgba(0, 0, 0, 0.08);
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --accent-color: #6366f1;
+  --accent-color-hover: #4f46e5;
+  --timer-bg: rgba(255, 255, 255, 0.7);
+  --glass-blur: blur(25px);
+  --border-radius: 20px;
+}
+
 [data-theme="calm"] {
   --bg-color: #f0f4f8;
   --bg-image: url("https://images.unsplash.com/photo-1478147424095-27f1251df8cc?auto=format&fit=crop&q=80");
@@ -39,6 +54,7 @@
   --accent-color-hover: #319795;
   --timer-bg: rgba(255, 255, 255, 0.5);
 }
+
 
 [data-theme="night"] {
   --bg-color: #0b0f19;
@@ -150,3 +166,109 @@ a {
 .secondary-btn:hover {
   background-color: var(--surface-color-hover);
 }
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 1024px) {
+  :root {
+    --border-radius: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    overflow-y: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  :root {
+    --border-radius: 16px;
+  }
+
+  .slide-content.glass-panel {
+    padding: 1rem !important;
+  }
+
+  /* Timer Mobile Adjustments */
+  [style*="fontSize: '12rem'"], [style*="fontSize: '11rem'"] {
+    font-size: 6rem !important;
+  }
+  
+  [style*="fontSize: '7.5rem'"], [style*="fontSize: '7rem'"] {
+    font-size: 4rem !important;
+    width: 100px !important;
+  }
+
+  [style*="width: '110px'"], [style*="width: '100px'"] {
+    width: 80px !important;
+    height: 80px !important;
+  }
+
+  /* Navigation Sidebar Mobile */
+  nav {
+    padding: 0.75rem !important;
+  }
+
+  nav button {
+    padding: 0.6rem !important;
+  }
+
+  /* Focus Mode Mobile */
+  [style*="zIndex: 10"] {
+    position: static !important;
+    width: 100% !important;
+    padding: 1rem !important;
+  }
+
+  .glass-panel {
+    border-radius: 12px;
+    padding: 1rem !important;
+  }
+
+  h1 { font-size: 1.8rem !important; }
+  h2 { font-size: 1.5rem !important; }
+  h3 { font-size: 1.25rem !important; }
+
+  /* Adjust grids that were 50/50 or sidebar-based */
+  .layout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --glass-blur: blur(8px);
+  }
+  
+  .primary-btn, .secondary-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* Specific mobile overrides for common patterns */
+  .mobile-hide { display: none !important; }
+  .mobile-full { width: 100% !important; }
+}
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* Custom Scrollbar for the glass panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+

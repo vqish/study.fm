@@ -35,17 +35,31 @@ export const AnalyticsProvider = ({ children }: { children: React.ReactNode }) =
     }
   };
 
+  // Load persistence on mount/user change
   useEffect(() => {
-    if (user) refreshStats();
-    else setStudyStats(null);
+    if (user) {
+      refreshStats();
+      db.getActiveTopic(user.uid).then(data => {
+        if (data && data.topic) {
+          setActiveTopic(data.topic);
+          startTimeRef.current = data.startTime;
+        }
+      });
+    } else {
+      setStudyStats(null);
+      setActiveTopic(null);
+      startTimeRef.current = null;
+    }
   }, [user]);
 
   const startStudying = (topic: ActiveTopic) => {
-    // If already studying something, save that session first
     if (activeTopic) stopStudying();
     
     setActiveTopic(topic);
     startTimeRef.current = Date.now();
+    if (user) {
+      db.saveActiveTopic(user.uid, topic).catch(console.error);
+    }
   };
 
   const stopStudying = async () => {
@@ -53,7 +67,9 @@ export const AnalyticsProvider = ({ children }: { children: React.ReactNode }) =
       const durationMs = Date.now() - startTimeRef.current;
       const minutes = Math.floor(durationMs / 60000);
       
-      // Log sessions longer than 10s for testing/demo
+      // Clear persistence immediately
+      db.saveActiveTopic(user.uid, null).catch(console.error);
+
       if (durationMs > 10000) {
         try {
           await db.addSession({
@@ -79,6 +95,7 @@ export const AnalyticsProvider = ({ children }: { children: React.ReactNode }) =
     </AnalyticsContext.Provider>
   );
 };
+
 
 export const useAnalytics = () => {
   const context = useContext(AnalyticsContext);

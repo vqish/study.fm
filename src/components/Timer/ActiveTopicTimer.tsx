@@ -51,10 +51,16 @@ export const ActiveTopicTimer = () => {
 
   const formatDisplay = () => {
     const s = pomodoroMode ? pomodoroTime : seconds;
-    const mins = Math.floor(s / 60);
+    const hrs = Math.floor(s / 3600);
+    const mins = Math.floor((s % 3600) / 60);
     const secs = s % 60;
+    
+    if (hrs > 0) {
+      return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
 
   const handleReset = () => {
     setSeconds(0);

@@ -18,22 +18,45 @@ export const AuthModal = ({ onClose }: { onClose: () => void }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
+    setError('');
+
+    // Basic Validation
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
     if (!isLogin && (!name || !country || !major)) {
-      setError('Please fill in all profile fields');
+      setError('Please fill in all profile fields.');
       return;
     }
 
     setIsLoading(true);
-    setError('');
     try {
       if (isLogin) {
         await login(email, password);
       } else {
         await signup({ name, email, password, country, major });
       }
+      onClose(); // Close on success
     } catch (err: any) {
-      setError(err.message || 'Action failed. Please try again.');
+      // Map common Firebase errors to user-friendly messages
+      let msg = err.message || 'Action failed. Please try again.';
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        msg = 'Invalid email or password.';
+      } else if (err.code === 'auth/email-already-in-use') {
+        msg = 'This email is already registered.';
+      } else if (err.code === 'auth/invalid-email') {
+        msg = 'Please enter a valid email address.';
+      } else if (err.message?.includes('API key')) {
+        msg = 'Firebase API key is missing or invalid. Please check your .env file.';
+      }
+      setError(msg);
     } finally {
       setIsLoading(false);
     }

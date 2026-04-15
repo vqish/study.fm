@@ -26,6 +26,7 @@ export type UserProfile = {
   studyTime: number; // minutes
   sessions: number;
   lastActive: number;
+  friends?: string[]; // array of UIDs
 };
 
 export type StudySession = {
@@ -36,22 +37,13 @@ export type StudySession = {
   subjectName: string;
   minutes: number;
   timestamp: any;
+  dateStr?: string; // YYYY-MM-DD for easy daily grouping
 };
 
-export type CloudRoom = {
-  id: string;
-  name: string;
-  subject: string;
-  creator: string;
-  activeUsers: string[];
-  createdAt: any;
-};
-
-export type CloudMessage = {
-  id: string;
-  text: string;
-  sender: string;
-  timestamp: any;
+export type UserSettings = {
+  playlists: string[];
+  theme: string;
+  lastModified: number;
 };
 
 export const db = {
@@ -70,7 +62,8 @@ export const db = {
         major: data.major || 'General Studies',
         studyTime: data.studyTime || 0,
         sessions: data.sessions || 0,
-        lastActive: data.lastActive || Date.now()
+        lastActive: data.lastActive || Date.now(),
+        friends: data.friends || []
       });
     });
     return users;
@@ -81,7 +74,18 @@ export const db = {
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
-      return { uid: docSnap.id, ...data } as UserProfile;
+      return { 
+        uid: docSnap.id, 
+        displayName: data.displayName || 'Guest',
+        email: data.email || '',
+        photoURL: data.photoURL,
+        country: data.country || 'Earth',
+        major: data.major || 'General Studies',
+        studyTime: data.studyTime || 0,
+        sessions: data.sessions || 0,
+        lastActive: data.lastActive || Date.now(),
+        friends: data.friends || []
+      } as UserProfile;
     }
     return null;
   },
@@ -94,11 +98,54 @@ export const db = {
     }, { merge: true });
   },
 
+  // --- Friends System ---
+  addFriend: async (userUid: string, friendUid: string) => {
+    // Bi-directional friend add (simple version)
+    const userRef = doc(firestore, 'users', userUid);
+    const friendRef = doc(firestore, 'users', friendUid);
+    
+    // Get current friends first to avoid duplicates
+    const userSnap = await getDoc(userRef);
+    const friendSnap = await getDoc(friendRef);
+    
+    if (userSnap.exists() && friendSnap.exists()) {
+      const userFriends = userSnap.data().friends || [];
+      const friendFriends = friendSnap.data().friends || [];
+      
+      if (!userFriends.includes(friendUid)) {
+        await setDoc(userRef, { friends: [...userFriends, friendUid] }, { merge: true });
+      }
+      if (!friendFriends.includes(userUid)) {
+        await setDoc(friendRef, { friends: [...friendFriends, userUid] }, { merge: true });
+      }
+    }
+  },
+
+  removeFriend: async (userUid: string, friendUid: string) => {
+    const userRef = doc(firestore, 'users', userUid);
+    const friendRef = doc(firestore, 'users', friendUid);
+    
+    const userSnap = await getDoc(userRef);
+    const friendSnap = await getDoc(friendRef);
+    
+    if (userSnap.exists() && friendSnap.exists()) {
+      const userFriends = userSnap.data().friends || [];
+      const friendFriends = friendSnap.data().friends || [];
+      
+      await setDoc(userRef, { friends: userFriends.filter((f: string) => f !== friendUid) }, { merge: true });
+      await setDoc(friendRef, { friends: friendFriends.filter((f: string) => f !== userUid) }, { merge: true });
+    }
+  },
+
   // --- Sessions ---
-  addSession: async (session: Omit<StudySession, 'id' | 'timestamp'>) => {
+  addSession: async (session: Omit<StudySession, 'id' | 'timestamp' | 'dateStr'>) => {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    
     await addDoc(collection(firestore, 'sessions'), {
       ...session,
-      timestamp: Timestamp.now()
+      timestamp: Timestamp.now(),
+      dateStr
     });
 
     const userRef = doc(firestore, 'users', session.userUid);
@@ -121,6 +168,20 @@ export const db = {
       sessions.push({ id: doc.id, ...doc.data() } as StudySession);
     });
     return sessions;
+  },
+
+  // --- Playlists & Settings ---
+  saveUserSettings: async (uid: string, settings: Partial<UserSettings>) => {
+    await setDoc(doc(firestore, 'userSettings', uid), {
+      ...settings,
+      lastModified: Date.now()
+    }, { merge: true });
+  },
+
+  getUserSettings: async (uid: string): Promise<UserSettings | null> => {
+    const docSnap = await getDoc(doc(firestore, 'userSettings', uid));
+    if (docSnap.exists()) return docSnap.data() as UserSettings;
+    return { playlists: [], theme: 'default', lastModified: Date.now() };
   },
 
   // --- Rooms ---
@@ -175,5 +236,56 @@ export const db = {
   getNotes: async (uid: string): Promise<string | null> => {
     const docSnap = await getDoc(doc(firestore, 'userNotes', uid));
     return docSnap.exists() ? docSnap.data().content : null;
+  },
+
+  // --- Syllabus ---
+  saveSyllabus: async (uid: string, syllabus: any[]) => {
+    await setDoc(doc(firestore, 'userSyllabus', uid), {
+      subjects: syllabus,
+      lastUpdated: Date.now()
+    });
+  },
+
+  getSyllabus: async (uid: string): Promise<any[] | null> => {
+    const docSnap = await getDoc(doc(firestore, 'userSyllabus', uid));
+    return docSnap.exists() ? docSnap.data().subjects : null;
+  },
+
+  // --- Active Topic Persistence ---
+  saveActiveTopic: async (uid: string, topic: any | null) => {
+    await setDoc(doc(firestore, 'activeTopic', uid), {
+      topic,
+      startTime: topic ? Date.now() : null
+    });
+  },
+
+  getActiveTopic: async (uid: string): Promise<{ topic: any, startTime: number } | null> => {
+    const docSnap = await getDoc(doc(firestore, 'activeTopic', uid));
+    if (docSnap.exists()) return docSnap.data() as any;
+    return null;
+  },
+
+  // --- Files Metadata ---
+  saveFileMetadata: async (uid: string, fileInfo: any) => {
+    await setDoc(doc(firestore, `users/${uid}/files`, fileInfo.id), {
+      ...fileInfo,
+      lastModified: Date.now()
+    });
+  },
+
+  getFileMetadata: async (uid: string): Promise<any[]> => {
+    const querySnapshot = await getDocs(collection(firestore, `users/${uid}/files`));
+    const files: any[] = [];
+    querySnapshot.forEach((doc) => {
+      files.push(doc.data());
+    });
+    return files;
+  },
+
+  deleteFileMetadata: async (uid: string, fileId: string) => {
+    await deleteDoc(doc(firestore, `users/${uid}/files`, fileId));
   }
 };
+
+
+

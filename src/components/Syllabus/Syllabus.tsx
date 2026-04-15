@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { Plus, CheckCircle, Circle, Upload, ChevronRight, ChevronDown, Trash2, Play, Pause } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, CheckCircle, Circle, Upload, ChevronRight, ChevronDown, Trash2, Play, Pause, Loader2 } from 'lucide-react';
 import { useAnalytics } from '../../contexts/AnalyticsContext';
+import { db } from '../../utils/db';
+import { useAuth } from '../../contexts/AuthContext';
 
 type SubSubtopic = { id: string, title: string, completed: boolean };
 type Subtopic = { id: string, title: string, completed: boolean, children: SubSubtopic[] };
@@ -10,30 +12,68 @@ type Subject = { id: string, name: string, topics: Topic[] };
 const uid = () => Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
 
 export const Syllabus = () => {
+  const { user } = useAuth();
   const { activeTopic, startStudying, stopStudying } = useAnalytics();
-  const [subjects, setSubjects] = useState<Subject[]>([
-    { 
-      id: '1', 
-      name: 'Computer Science 101', 
-      topics: [
-        { 
-          id: 't1', title: 'Data Structures', completed: false,
-          subtopics: [
-            { id: 'st1', title: 'Arrays & Strings', completed: true, children: [] }, 
-            { id: 'st2', title: 'Linked Lists', completed: false, children: [
-              { id: 'sst1', title: 'Singly Linked', completed: false },
-              { id: 'sst2', title: 'Doubly Linked', completed: false },
-            ]}
-          ]
-        }
-      ] 
-    }
-  ]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newSubj, setNewSubj] = useState('');
   const [jsonInput, setJsonInput] = useState('');
   const [showJsonInput, setShowJsonInput] = useState(false);
+  
+  const isInitialMount = useRef(true);
 
-  // --- Mutators ---
+  // Load from Cloud
+  useEffect(() => {
+    const loadData = async () => {
+      if (user) {
+        try {
+          const cloudData = await db.getSyllabus(user.uid);
+          if (cloudData) {
+            setSubjects(cloudData);
+          } else {
+            // Default subjects for new users
+            setSubjects([
+              { 
+                id: '1', 
+                name: 'Computer Science 101', 
+                topics: [
+                  { 
+                    id: 't1', title: 'Data Structures', completed: false,
+                    subtopics: [
+                      { id: 'st1', title: 'Arrays & Strings', completed: true, children: [] }, 
+                      { id: 'st2', title: 'Linked Lists', completed: false, children: [
+                        { id: 'sst1', title: 'Singly Linked', completed: false },
+                        { id: 'sst2', title: 'Doubly Linked', completed: false },
+                      ]}
+                    ]
+                  }
+                ] 
+              }
+            ]);
+          }
+        } catch (err) {
+          console.error("Syllabus load failed:", err);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [user]);
+
+  // Save to Cloud on change
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (user && subjects.length > 0) {
+      db.saveSyllabus(user.uid, subjects).catch(console.error);
+    }
+  }, [subjects, user]);
+
   const update = (fn: (draft: Subject[]) => Subject[]) => setSubjects(prev => fn(prev));
 
   const addSubject = (e: React.FormEvent) => {
@@ -42,6 +82,7 @@ export const Syllabus = () => {
     update(s => [...s, { id: uid(), name: newSubj, topics: [] }]);
     setNewSubj('');
   };
+
 
   const deleteSubject = (subjId: string) => {
     if (!confirm('Delete this entire subject and all its topics?')) return;
@@ -169,7 +210,16 @@ export const Syllabus = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '400px' }}>
+        <Loader2 size={48} color="var(--accent-color)" style={{ animation: 'spin 1.5s linear infinite' }} />
+      </div>
+    );
+  }
+
   return (
+
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', gap: '2rem' }}>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

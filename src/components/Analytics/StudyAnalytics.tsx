@@ -46,8 +46,19 @@ export const StudyAnalytics = () => {
 
   if (studyStats === null) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+      <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
         <Loader2 size={48} color="var(--accent-color)" style={{ animation: 'spin 1.5s linear infinite' }} />
+        <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>Gathering your study data...</p>
+      </div>
+    );
+  }
+
+  if (studyStats.length === 0) {
+    return (
+      <div style={{ padding: '4rem', textAlign: 'center', opacity: 0.7 }}>
+        <BarChart3 size={80} style={{ marginBottom: '1.5rem', color: 'var(--accent-color)' }} />
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>No study data yet</h2>
+        <p style={{ marginTop: '0.5rem' }}>Start your first session using the Focus Timer to see your progress here!</p>
       </div>
     );
   }
@@ -116,7 +127,7 @@ export const StudyAnalytics = () => {
 
         {/* Most Studied Subject Card */}
         <div className="glass-panel" style={{ flex: 1, minWidth: '320px', padding: '2.5rem', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '1.5rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Subject Mastery</h3>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Domain Analysis</h3>
           
           {mostStudied ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-around', alignItems: 'center', textAlign: 'center' }}>
@@ -128,13 +139,18 @@ export const StudyAnalytics = () => {
                    <TrendingUp size={16} color="#fff" />
                 </div>
               </div>
-              <div>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Dominant Interest</p>
-                <h4 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#fff', margin: 0 }}>{mostStudied[0]}</h4>
+              <div style={{ marginTop: '1rem' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>Peak Productivity Domain</p>
+                <h4 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fff', margin: 0, letterSpacing: '-0.5px' }}>{mostStudied[0]}</h4>
               </div>
-              <div style={{ width: '100%', padding: '1.25rem', background: 'rgba(255,255,255,0.03)', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Total Time Invested</p>
-                 <p style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-color)' }}>{mostStudied[1]} <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>MINUTES</span></p>
+              
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.8rem', marginTop: '1.5rem' }}>
+                {sortedSubjects.slice(0, 3).map(([name, mins]: any) => (
+                  <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{name}</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--accent-color)' }}>{mins}m</span>
+                  </div>
+                ))}
               </div>
             </div>
           ) : (
@@ -142,6 +158,7 @@ export const StudyAnalytics = () => {
           )}
         </div>
       </div>
+
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
@@ -151,9 +168,31 @@ export const StudyAnalytics = () => {
 
 const calculateStreak = (sessions: any) => {
     if (!sessions || sessions.length === 0) return 0;
-    // Simple mock logic for demo if real streaks aren't tracked
-    return Math.min(sessions.length, 5); 
+    
+    const dates = sessions.map((s: any) => s.dateStr || s.timestamp?.toDate?.().toISOString().split('T')[0]).filter(Boolean);
+    const uniqueDates = [...new Set(dates)].sort().reverse();
+    
+    if (uniqueDates.length === 0) return 0;
+    
+    let streak = 0;
+    let current = new Date();
+    current.setHours(0,0,0,0);
+    
+    for (let i = 0; i < uniqueDates.length; i++) {
+        const sessionDate = new Date(uniqueDates[i] as string);
+        sessionDate.setHours(0,0,0,0);
+        
+        const diffDays = Math.floor((current.getTime() - sessionDate.getTime()) / (24 * 60 * 60 * 1000));
+        
+        if (diffDays === streak) {
+            streak++;
+        } else if (diffDays > streak) {
+            break;
+        }
+    }
+    return streak;
 }
+
 
 const StatCard = ({ icon, value, sublabel }: any) => (
   <div className="glass-panel" style={{ flex: 1, minWidth: '200px', padding: '1.75rem', borderRadius: '22px', display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px solid rgba(255,255,255,0.05)' }}>

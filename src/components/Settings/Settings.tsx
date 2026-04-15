@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Bell, Paintbrush, LogIn, MapPin, GraduationCap, Save, X as CloseIcon } from 'lucide-react';
-import { db } from '../../utils/db';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export const Settings = () => {
   const { user, logout, syncProfile, setShowAuthModal } = useAuth();
-  const [theme, setTheme] = useState('dark');
+  const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   
@@ -127,9 +127,13 @@ export const Settings = () => {
                 <p style={{ fontWeight: 700, fontSize: '1rem' }}>Global Theme</p>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Switch between dark and light interface modes.</p>
               </div>
-              <select value={theme} onChange={e=>setTheme(e.target.value)} style={styles.select}>
-                <option value="dark">Focused Dark</option>
+              <select value={theme} onChange={e=>setTheme(e.target.value as any)} style={styles.select}>
+                <option value="default">Focused Dark</option>
                 <option value="light">Solarized Light</option>
+                <option value="calm">Calm Breeze</option>
+                <option value="rain">Rainy Night</option>
+                <option value="night">Deep Night</option>
+                <option value="library">Grand Library</option>
               </select>
             </div>
           </div>
