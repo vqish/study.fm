@@ -168,7 +168,7 @@ export const Timer = () => {
         <div style={styles.topSection}>
           {mode === 'pomodoro' ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
-              <div style={{ display: 'flex', gap: '2rem' }}>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                 <span onClick={() => {setPomoPhase('focus'); setPomoTime(settings.focus*60); setIsPomoActive(false)}} style={{ ...styles.subMode, color: pomoPhase === 'focus' ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: pomoPhase === 'focus' ? 800 : 600 }}>Focus</span>
                 <span onClick={() => {setPomoPhase('shortBreak'); setPomoTime(settings.shortBreak*60); setIsPomoActive(false)}} style={{ ...styles.subMode, color: pomoPhase === 'shortBreak' ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: pomoPhase === 'shortBreak' ? 800 : 600 }}>Break</span>
                 <span onClick={() => {setPomoPhase('longBreak'); setPomoTime(settings.longBreak*60); setIsPomoActive(false)}} style={{ ...styles.subMode, color: pomoPhase === 'longBreak' ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: pomoPhase === 'longBreak' ? 800 : 600 }}>Long Break</span>
@@ -262,15 +262,15 @@ const styles = {
   modeBtn: { padding: '0.6rem 1.4rem', borderRadius: '12px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.3s', border: 'none' },
   displayBoard: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', width: '100%' },
   topSection: { height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  subMode: { fontSize: '0.95rem', cursor: 'pointer', padding: '0.4rem 0.8rem', transition: 'all 0.2s' },
-  timeText: { fontSize: '9rem', fontWeight: 900, fontFamily: "'Outfit', sans-serif", letterSpacing: '-5px', color: '#fff', textShadow: '0 10px 40px rgba(0,0,0,0.5)', lineHeight: 1 },
+  subMode: { fontSize: '0.95rem', cursor: 'pointer', padding: '0.4rem 0.8rem', transition: 'all 0.2s', whiteSpace: 'nowrap' },
+  timeText: { fontSize: 'clamp(4.5rem, 15vw, 9rem)', fontWeight: 900, fontFamily: "'Outfit', sans-serif", letterSpacing: '-5px', color: '#fff', textShadow: '0 10px 40px rgba(0,0,0,0.5)', lineHeight: 1 },
   controls: { display: 'flex', gap: '2rem', alignItems: 'center', marginTop: '2rem' },
-  actionBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: '90px', height: '90px', borderRadius: '50%', boxShadow: '0 10px 30px rgba(187, 134, 252, 0.4)', transition: 'transform 0.2s', border: 'none' },
-  resetBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', width: '56px', height: '56px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', cursor: 'pointer' },
-  timeInput: { fontSize: '6rem', fontWeight: 900, fontFamily: "'Outfit', sans-serif", background: 'transparent', border: 'none', color: '#fff', width: '130px', textAlign: 'center' as const, outline: 'none', borderBottom: '2px solid rgba(255,255,255,0.1)' },
+  actionBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '90px', width: '90px', height: '90px', borderRadius: '50%', boxShadow: '0 10px 30px rgba(187, 134, 252, 0.4)', transition: 'transform 0.2s', border: 'none' },
+  resetBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', minWidth: '56px', width: '56px', height: '56px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', cursor: 'pointer' },
+  timeInput: { fontSize: 'clamp(3rem, 10vw, 6rem)', fontWeight: 900, fontFamily: "'Outfit', sans-serif", background: 'transparent', border: 'none', color: '#fff', width: 'clamp(80px, 20vw, 130px)', textAlign: 'center' as const, outline: 'none', borderBottom: '2px solid rgba(255,255,255,0.1)' },
   inputStack: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center' },
   inputLabel: { fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 800, marginTop: '0.25rem', textTransform: 'uppercase' as const },
-  timeColon: { fontSize: '4rem', fontWeight: 900, color: 'rgba(255,255,255,0.1)', paddingBottom: '1rem' },
+  timeColon: { fontSize: 'clamp(2rem, 8vw, 4rem)', fontWeight: 900, color: 'rgba(255,255,255,0.1)', paddingBottom: '1rem' },
   settingRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   settingInput: { width: '80px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', color: '#fff', padding: '0.6rem', borderRadius: '10px', textAlign: 'center' as const },
   topicInput: { background: 'rgba(0,0,0,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: '10px', fontSize: '0.85rem', outline: 'none', width: '180px', textAlign: 'center' as const }

@@ -206,7 +206,7 @@ const styles = {
   textarea: { width: '100%', height: '80px', borderRadius: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '1rem', fontSize: '0.95rem', outline: 'none', resize: 'none' as const },
   formActions: { display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' },
   formBtn: { padding: '0.65rem 1.5rem', borderRadius: '10px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: '1.25rem' },
   item: { padding: '1.5rem', borderRadius: '20px', position: 'relative' as const, cursor: 'pointer', transition: 'all 0.2s', display: 'flex' },
   itemActions: { position: 'absolute' as const, top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' },
   miniBtn: { padding: '0.5rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)' },

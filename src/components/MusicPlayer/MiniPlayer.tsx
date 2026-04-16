@@ -21,21 +21,24 @@ export const MiniPlayer = ({
   
   if (!activeTrack || (activeSlide === 'media' && !isFocusMode)) return null;
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
   const isYoutube = activeTrack.type === 'youtube';
 
   // Safe initial position: bottom-right with safe margin from taskbar
-  const playerW = playerMode === 'video' ? 320 : 280;
+  const playerW = playerMode === 'video' ? (isMobile ? window.innerWidth - 32 : 320) : (isMobile ? window.innerWidth - 32 : 280);
   const playerH = playerMode === 'video' ? 220 : 90;
+  const bottomOffset = isMobile ? 85 : SAFE_MARGIN; // Avoid mobile bottom nav
   const initX = Math.max(SAFE_MARGIN, window.innerWidth - playerW - SAFE_MARGIN);
-  const initY = Math.max(SAFE_MARGIN, window.innerHeight - playerH - SAFE_MARGIN);
+  const initY = Math.max(SAFE_MARGIN, window.innerHeight - playerH - bottomOffset);
 
   return (
     <>
-      <DraggableWidget id="mini-player" initialPos={{ x: initX, y: initY }} safeBottom={SAFE_MARGIN}>
+      <DraggableWidget id="mini-player" initialPos={{ x: initX, y: initY }} safeBottom={bottomOffset}>
         <div 
           className="glass-panel" 
           style={{ 
             width: playerMode === 'video' ? '320px' : '280px', 
+            maxWidth: '100%',
             padding: '1rem', 
             borderRadius: '24px', 
             display: 'flex', 

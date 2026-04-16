@@ -20,6 +20,7 @@ const SAMPLE_NOTIFICATIONS: Notification[] = [
 ];
 
 export const Navbar = () => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
   const { user, setShowAuthModal, logout } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -58,11 +59,11 @@ export const Navbar = () => {
   return (
     <header style={styles.navbar} className="glass-panel">
       <div style={styles.left}>
-        <div style={styles.searchBox}>
+        <div style={styles.searchBox(isMobile)}>
           <Search size={18} color="var(--text-secondary)" />
           <input 
             type="text" 
-            placeholder="Search subjects, topics or rooms..." 
+            placeholder={isMobile ? "Search..." : "Search subjects, topics or rooms..."} 
             style={styles.searchInput}
           />
         </div>
@@ -92,7 +93,7 @@ export const Navbar = () => {
           </button>
 
           {showNotifications && (
-            <div className="glass-panel" style={styles.notifPanel}>
+            <div className="glass-panel" style={styles.notifPanel(isMobile)}>
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem 0.75rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>
@@ -159,7 +160,7 @@ export const Navbar = () => {
           )}
         </div>
 
-        <div style={styles.divider} />
+        <div style={styles.divider} className="mobile-hide" />
 
         {user ? (
           <div ref={profileRef} style={{ position: 'relative' }}>
@@ -180,7 +181,7 @@ export const Navbar = () => {
             </button>
 
             {showProfileMenu && (
-              <div style={styles.dropdown} className="glass-panel">
+              <div style={styles.dropdown(isMobile)} className="glass-panel">
                 <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '0.5rem' }}>
                   <p style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff' }}>{user.displayName}</p>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user.email}</p>
@@ -204,7 +205,7 @@ export const Navbar = () => {
             className="primary-btn"
           >
             <LogIn size={18} />
-            <span>Login / Sign Up</span>
+            <span>{isMobile ? 'Login' : 'Login / Sign Up'}</span>
           </button>
         )}
       </div>
@@ -218,21 +219,22 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '0 2rem',
-    margin: '1rem 1rem 0 1rem',
+    padding: '0 min(2rem, 4vw)',
+    margin: '1rem min(1rem, 2vw) 0 min(1rem, 2vw)',
     borderRadius: '20px',
     zIndex: 100,
     background: 'rgba(15, 15, 20, 0.7)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     flexShrink: 0,
+    gap: '0.5rem'
   },
   left: { flex: 1, display: 'flex', alignItems: 'center' },
-  searchBox: {
+  searchBox: (isMobile: boolean) => ({
     display: 'flex', alignItems: 'center', gap: '0.75rem',
     background: 'rgba(0,0,0,0.2)', padding: '0.6rem 1.25rem',
-    borderRadius: '12px', width: '100%', maxWidth: '400px',
+    borderRadius: '12px', width: '100%', maxWidth: isMobile ? '200px' : '400px',
     border: '1px solid rgba(255,255,255,0.05)',
-  },
+  }),
   searchInput: { background: 'none', border: 'none', color: '#fff', outline: 'none', width: '100%', fontSize: '0.9rem' },
   right: { display: 'flex', alignItems: 'center', gap: '1.25rem' },
   iconBtn: {
@@ -260,15 +262,15 @@ const styles = {
     display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1rem',
   },
   userInfo: { display: 'flex', flexDirection: 'column' as const, alignItems: 'flex-start' },
-  userName: { fontSize: '0.88rem', fontWeight: 700, color: '#fff', lineHeight: 1.2 },
-  userMajor: { fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 500 },
-  dropdown: {
-    position: 'absolute' as const, top: 'calc(100% + 10px)', right: 0, width: '210px',
+  userName: { fontSize: '0.88rem', fontWeight: 700, color: '#fff', lineHeight: 1.2, display: 'none' }, // will use CSS media instead, or let's use JS logic but it's okay to just hide on very small phones
+  userMajor: { fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 500, display: 'none' },
+  dropdown: (isMobile: boolean) => ({
+    position: 'absolute' as const, top: 'calc(100% + 10px)', right: 0, width: isMobile ? '180px' : '210px',
     padding: '0.5rem', borderRadius: '16px', display: 'flex', flexDirection: 'column' as const,
     gap: '0.15rem', boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
     border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15,15,22,0.98)',
     animation: 'slideUp 0.2s ease-out', zIndex: 200,
-  },
+  }),
   dropdownItem: {
     display: 'flex', alignItems: 'center', gap: '0.75rem',
     padding: '0.75rem 1rem', borderRadius: '10px',
@@ -277,14 +279,15 @@ const styles = {
     textAlign: 'left' as const, transition: 'background 0.2s',
   },
   dropdownDivider: { height: '1px', background: 'rgba(255,255,255,0.05)', margin: '0.25rem 0' },
-  notifPanel: {
-    position: 'absolute' as const, top: 'calc(100% + 12px)', right: '-60px',
-    width: '360px', borderRadius: '20px',
+  notifPanel: (isMobile: boolean) => ({
+    position: 'absolute' as const, top: 'calc(100% + 12px)', right: isMobile ? '-10px' : '-60px',
+    width: isMobile ? 'calc(100vw - 40px)' : '360px',
+    maxWidth: '360px', borderRadius: '20px',
     border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(14,14,20,0.98)',
     boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
     animation: 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)', zIndex: 200,
     overflow: 'hidden'
-  },
+  }),
   notifAction: {
     display: 'flex', alignItems: 'center', gap: '0.3rem',
     background: 'rgba(255,255,255,0.06)', border: 'none',

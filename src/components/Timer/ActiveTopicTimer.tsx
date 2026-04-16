@@ -3,6 +3,7 @@ import { useAnalytics } from '../../contexts/AnalyticsContext';
 import { Play, Pause, X, Clock, Award, RotateCcw, Timer as TimerIcon, Coffee } from 'lucide-react';
 
 export const ActiveTopicTimer = () => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
   const { activeTopic, stopStudying } = useAnalytics();
   const [seconds, setSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -68,7 +69,7 @@ export const ActiveTopicTimer = () => {
   };
 
   return (
-    <div style={styles.floatingContainer} className="glass-panel">
+    <div style={styles.floatingContainer(isMobile)} className="glass-panel">
       <div style={styles.header}>
         <div style={{ ...styles.statusDot, background: isBreak ? '#03DAC6' : 'var(--success-color)' }} />
         <span style={styles.statusText}>
@@ -121,11 +122,11 @@ export const ActiveTopicTimer = () => {
 };
 
 const styles = {
-  floatingContainer: {
+  floatingContainer: (isMobile: boolean) => ({
     position: 'fixed' as const,
-    bottom: '2rem',
-    right: '2rem',
-    width: '280px',
+    bottom: isMobile ? 'calc(85px + env(safe-area-inset-bottom))' : '2rem',
+    right: isMobile ? '1rem' : '2rem',
+    width: isMobile ? 'calc(100vw - 2rem)' : '280px',
     padding: '1.25rem',
     zIndex: 2000,
     boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
@@ -134,7 +135,8 @@ const styles = {
     background: 'rgba(15, 15, 20, 0.85)',
     backdropFilter: 'blur(30px)',
     animation: 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-  },
+    boxSizing: 'border-box' as const,
+  }),
   header: {
     display: 'flex',
     alignItems: 'center',

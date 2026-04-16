@@ -15,6 +15,7 @@ interface SubjectStats {
 
 // --- Main Component ---
 export const StudyAnalytics = () => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
   const { studyStats } = useAnalytics();
   const [period, setPeriod] = useState<Period>('weekly');
 
@@ -108,7 +109,7 @@ export const StudyAnalytics = () => {
           <h2 style={styles.title}>Progress Board</h2>
           <p style={styles.subtitle}>Real-time synchronization of your growth.</p>
         </div>
-        <div style={styles.periodSelector}>
+        <div className="module-scroll-area" style={styles.periodSelector(isMobile)}>
            {(['daily', 'weekly', 'monthly', 'yearly'] as Period[]).map(p => (
              <button 
                 key={p} 
@@ -155,7 +156,7 @@ export const StudyAnalytics = () => {
           />
         </div>
 
-        <div style={styles.mainGrid}>
+        <div style={styles.mainGrid(isMobile)}>
           
           {/* Calendar Heatmap */}
           <div className="glass-panel" style={styles.panel}>
@@ -421,8 +422,8 @@ const styles = {
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 },
   title: { fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.5px', margin: 0 },
   subtitle: { color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0.25rem 0 0 0' },
-  periodSelector: { display: 'flex', background: 'rgba(0,0,0,0.4)', padding: '0.4rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' },
-  periodBtn: { padding: '0.5rem 1.25rem', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700, textTransform: 'capitalize' as const, transition: 'all 0.3s' },
+  periodSelector: (isMobile: boolean) => ({ display: 'flex', background: 'rgba(0,0,0,0.4)', padding: '0.4rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)', overflowX: isMobile ? 'auto' : 'visible' }),
+  periodBtn: { padding: '0.5rem 1.25rem', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700, textTransform: 'capitalize' as const, transition: 'all 0.3s', whiteSpace: 'nowrap' as const },
   scrollArea: { flex: 1, overflowY: 'auto' as const, display: 'flex', flexDirection: 'column' as const, gap: '1.5rem', paddingBottom: '2rem', paddingRight: '0.5rem' },
   statGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' },
   statCard: { padding: '1.5rem', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '1.25rem', border: '1px solid rgba(255,255,255,0.05)' },
@@ -430,8 +431,8 @@ const styles = {
   statLabel: { fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '1px', margin: 0 },
   statValue: { fontSize: '1.5rem', fontWeight: 900, color: '#fff' },
   statSubtext: { fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 },
-  mainGrid: { display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '1.5rem' },
-  panel: { padding: '1.75rem', borderRadius: '24px', display: 'flex', flexDirection: 'column' as const, gap: '1.5rem', border: '1px solid rgba(255,255,255,0.05)' },
+  mainGrid: (isMobile: boolean) => ({ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.6fr 1fr', gap: '1.5rem' }),
+  panel: { padding: 'clamp(1rem, 3vw, 1.75rem)', borderRadius: '24px', display: 'flex', flexDirection: 'column' as const, gap: '1.5rem', border: '1px solid rgba(255,255,255,0.05)', boxSizing: 'border-box' as const },
   panelTitle: { fontSize: '1.1rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#fff' },
   subjectRow: { display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '0.5rem' },
   progressBarBg: { height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' },

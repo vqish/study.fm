@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Video, Trash2, FileText, X, Cloud, Loader2, Plus, ChevronRight, Save, FolderOpen, Upload, Download, Eye, Search } from 'lucide-react';
+import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, Video, Trash2, FileText, X, Cloud, Loader2, Plus, ChevronRight, ChevronLeft, Save, FolderOpen, Upload, Download, Eye, Search } from 'lucide-react';
 import { saveFile, getAllFiles, deleteFile, downloadFile, formatFileSize, type StoredFile } from '../../utils/fileStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../utils/db';
@@ -12,12 +12,14 @@ type Note = {
 };
 
 export const Notes = () => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
   const { user } = useAuth();
   const editorRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<any>(null);
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeNote, setActiveNote] = useState<Note | null>(null);
+  const [showMobileList, setShowMobileList] = useState(true);
   const [loading, setLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'saved' | 'offline'>('idle');
   
@@ -105,6 +107,7 @@ export const Notes = () => {
     };
     setNotes(prev => [newNote, ...prev]);
     setActiveNote(newNote);
+    setShowMobileList(false);
     setTimeout(() => {
       if (editorRef.current) {
         editorRef.current.innerHTML = newNote.content;
@@ -208,10 +211,10 @@ export const Notes = () => {
   }
 
   return (
-    <div style={{ display: 'flex', width: '100%', height: '100%', gap: '1.5rem', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', width: '100%', height: '100%', gap: '1.5rem', overflow: 'hidden', position: 'relative' }}>
       
       {/* 1. Sidebar — All Notes */}
-      <div className="glass-panel" style={styles.sidebar}>
+      <div className="glass-panel" style={{ ...styles.sidebar(isMobile), display: isMobile && !showMobileList ? 'none' : 'flex' }}>
         <div style={styles.sidebarHeader}>
           <h3 style={styles.sidebarTitle}>All Notes</h3>
           <button onClick={createNewNote} style={styles.addBtn} title="New Note"><Plus size={18} /></button>
@@ -237,6 +240,7 @@ export const Notes = () => {
                 key={note.id} 
                 onClick={() => {
                   setActiveNote(note);
+                  setShowMobileList(false);
                   if (editorRef.current) editorRef.current.innerHTML = note.content || '';
                 }}
                 style={{ 
@@ -257,21 +261,27 @@ export const Notes = () => {
       </div>
 
       {/* 2. Main Editor Area */}
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', gap: '1rem' }}>
+      <div style={{ display: isMobile && showMobileList ? 'none' : 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', gap: '1rem' }}>
         
         {activeNote ? (
           <>
             {/* Header row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0, gap: '1rem' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <input 
-                  type="text" 
-                  value={activeNote.title} 
-                  onChange={e => updateTitle(e.target.value)}
-                  style={styles.titleInput}
-                  placeholder="Note Title..."
-                />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {isMobile && (
+                  <button onClick={() => setShowMobileList(true)} style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', padding: '0.2rem' }}>
+                    <ChevronLeft size={28} />
+                  </button>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <input 
+                    type="text" 
+                    value={activeNote.title} 
+                    onChange={e => updateTitle(e.target.value)}
+                    style={styles.titleInput}
+                    placeholder="Note Title..."
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
                   <div style={{ ...styles.syncBadge, color: syncStatus === 'offline' ? 'var(--danger-color)' : syncStatus === 'saved' ? '#03DAC6' : 'var(--text-secondary)' }}>
                     {syncStatus === 'syncing' ? <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> : 
                      syncStatus === 'saved' ? <Cloud size={11} /> : <Save size={11} />}
@@ -280,12 +290,12 @@ export const Notes = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-                <button onClick={manualSave} className="secondary-btn" style={styles.metaBtn} title="Save now">
+              <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, flexWrap: 'wrap' }}>
+                <button onClick={manualSave} className="secondary-btn mobile-hide" style={styles.metaBtn} title="Save now">
                   <Save size={16} /> Save
                 </button>
                 <button className="secondary-btn" onClick={() => { setShowFiles(!showFiles); loadFiles(); }} style={styles.metaBtn}>
-                  <FolderOpen size={16} /> Files
+                  <FolderOpen size={16} />
                 </button>
                 <button className="secondary-btn" onClick={deleteActiveNote} style={{ ...styles.metaBtn, color: 'var(--danger-color)' }}>
                   <Trash2 size={16} />
@@ -346,9 +356,10 @@ export const Notes = () => {
         )}
       </div>
 
-      {/* 3. Files Drawer (slides in from right) */}
+      {/* 3. Files Drawer (slides in from right or bottom on mobile) */}
       {showFiles && (
         <FilesDrawer 
+          isMobile={isMobile}
           files={uploadedFiles}
           isUploading={isUploading}
           fileInputRef={fileInputRef}
@@ -392,8 +403,9 @@ const ToolBtn = ({ icon, onClick, title }: { icon: any, onClick: () => void, tit
 
 // Files drawer component
 const FilesDrawer = ({ 
-  files, isUploading, fileInputRef, onUpload, onClose, onInsertImage, onDeleteFile, onOpenNote
+  isMobile, files, isUploading, fileInputRef, onUpload, onClose, onInsertImage, onDeleteFile, onOpenNote
 }: {
+  isMobile: boolean;
   files: StoredFile[];
   isUploading: boolean;
   fileInputRef: React.RefObject<HTMLInputElement>;
@@ -409,7 +421,7 @@ const FilesDrawer = ({
 
   return (
     <>
-      <div className="glass-panel" style={styles.drawer}>
+      <div className="glass-panel" style={styles.drawer(isMobile)}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexShrink: 0 }}>
           <h4 style={{ fontWeight: 800, fontSize: '1rem' }}>Files & Materials</h4>
           <button onClick={onClose} style={{ color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '0.35rem' }}><X size={16} /></button>
@@ -502,22 +514,22 @@ const FilesDrawer = ({
 };
 
 const styles = {
-  sidebar: { width: '240px', borderRadius: '20px', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden', background: 'rgba(0,0,0,0.2)', flexShrink: 0 },
+  sidebar: (isMobile: boolean) => ({ width: isMobile ? '100%' : '240px', borderRadius: '20px', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden', background: 'rgba(0,0,0,0.2)', flexShrink: 0 }),
   sidebarHeader: { padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' },
   sidebarTitle: { fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' as const, letterSpacing: '1.5px' },
   addBtn: { width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-color)', borderRadius: '8px', color: '#fff', flexShrink: 0 },
   emptySidebar: { textAlign: 'center' as const, padding: '3rem 1rem', color: 'var(--text-secondary)' },
   noteItem: { display: 'flex', alignItems: 'center', padding: '0.85rem 1.25rem', cursor: 'pointer', transition: 'all 0.2s', gap: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.03)' },
   noteItemInfo: { flex: 1, minWidth: 0 },
-  titleInput: { width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '1.7rem', fontWeight: 800, padding: 0, outline: 'none', letterSpacing: '-0.5px' },
+  titleInput: { width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: 'clamp(1.2rem, 4vw, 1.7rem)', fontWeight: 800, padding: 0, outline: 'none', letterSpacing: '-0.5px' },
   syncBadge: { display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' as const },
   metaBtn: { padding: '0.45rem 0.85rem', borderRadius: '10px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 },
   toolbar: { display: 'flex', gap: '0.2rem', padding: '0.6rem 0.75rem', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.05)', flexWrap: 'wrap' as const },
   toolBtn: { padding: '0.4rem 0.5rem', borderRadius: '6px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', transition: 'background 0.15s, color 0.15s' },
   vDivider: { width: '1px', background: 'rgba(255,255,255,0.08)', margin: '0 0.4rem', alignSelf: 'stretch' },
-  editor: { flex: 1, padding: '2rem 2.5rem', outline: 'none', fontSize: '1rem', lineHeight: 1.75, background: 'transparent', color: '#f0f0f0', minHeight: 0 },
-  noActive: { flex: 1, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', textAlign: 'center' as const, padding: '4rem' },
-  drawer: { width: '280px', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden', padding: '1.25rem', animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)', flexShrink: 0 },
+  editor: { flex: 1, padding: 'clamp(1rem, 3vw, 2rem)', outline: 'none', fontSize: '1rem', lineHeight: 1.75, background: 'transparent', color: '#f0f0f0', minHeight: 0 },
+  noActive: { flex: 1, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', textAlign: 'center' as const, padding: 'clamp(1rem, 5vw, 4rem)' },
+  drawer: (isMobile: boolean) => ({ width: isMobile ? '100%' : '280px', position: isMobile ? 'absolute' : 'relative', right: 0, top: 0, bottom: 0, zIndex: 100, display: 'flex', flexDirection: 'column' as const, overflow: 'hidden', padding: '1.25rem', animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)', flexShrink: 0, background: 'rgba(25, 25, 30, 0.95)' }),
   drawerItem: { display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.5rem', borderRadius: '10px', marginBottom: '0.4rem', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' },
   drawerAction: { background: 'rgba(255,255,255,0.06)', border: 'none', color: 'var(--text-secondary)', padding: '0.35rem', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }
 };

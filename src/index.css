@@ -106,6 +106,10 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0;
 }
 
+h1 { font-size: clamp(1.8rem, 4vw, 2.5rem); }
+h2 { font-size: clamp(1.5rem, 3.5vw, 2rem); }
+h3 { font-size: clamp(1.1rem, 2.5vw, 1.5rem); font-weight: 800; }
+
 button {
   font-family: inherit;
   cursor: pointer;
@@ -168,6 +172,10 @@ a {
 }
 
 /* --- Mobile Responsiveness --- */
+@media (max-width: 1440px) {
+  /* xl spacing */
+}
+
 @media (max-width: 1024px) {
   :root {
     --border-radius: 12px;
@@ -177,39 +185,33 @@ a {
 @media (max-width: 768px) {
   body {
     overflow: hidden !important;
-    height: 100vh !important;
+    height: 100dvh !important;
   }
 
   :root {
     --border-radius: 16px;
+    --glass-blur: blur(12px);
   }
 
+  /* Reset layout constraints for mobile */
   .slide-content.glass-panel {
     padding: 1rem !important;
+    border-radius: 16px !important;
   }
 
-  /* Timer Mobile Adjustments */
+  /* Timer Mobile Adjustments (fluid scaling via component inline style overrides but global backup here) */
   [style*="fontSize: '12rem'"], [style*="fontSize: '11rem'"] {
-    font-size: 6rem !important;
+    font-size: clamp(4rem, 15vw, 6rem) !important;
   }
   
   [style*="fontSize: '7.5rem'"], [style*="fontSize: '7rem'"] {
-    font-size: 4rem !important;
-    width: 100px !important;
+    font-size: clamp(3rem, 10vw, 4rem) !important;
+    width: auto !important;
   }
 
   [style*="width: '110px'"], [style*="width: '100px'"] {
-    width: 80px !important;
-    height: 80px !important;
-  }
-
-  /* Navigation Sidebar Mobile */
-  nav {
-    padding: 0.75rem !important;
-  }
-
-  nav button {
-    padding: 0.6rem !important;
+    width: 60px !important;
+    height: 60px !important;
   }
 
   /* Focus Mode Mobile */
@@ -221,17 +223,18 @@ a {
 
   .glass-panel {
     border-radius: 12px;
-    padding: 1rem !important;
   }
-
-  h1 { font-size: 1.8rem !important; }
-  h2 { font-size: 1.5rem !important; }
-  h3 { font-size: 1.25rem !important; }
 
   /* Adjust grids that were 50/50 or sidebar-based */
   .layout-grid {
     grid-template-columns: 1fr !important;
     gap: 1rem !important;
+  }
+  
+  /* Tap Target Minimums for interactive elements that might be too small */
+  button.nav-btn {
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 
@@ -243,11 +246,26 @@ a {
   .primary-btn, .secondary-btn {
     padding: 0.6rem 1rem;
     font-size: 0.9rem;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   /* Specific mobile overrides for common patterns */
   .mobile-hide { display: none !important; }
   .mobile-full { width: 100% !important; }
+}
+
+@media (max-width: 320px) {
+  /* Extra tiny phones (e.g. iPhone SE) */
+  :root {
+    --border-radius: 10px;
+  }
+  .slide-content.glass-panel {
+    padding: 0.75rem !important;
+  }
 }
 
 /* Animations */
