@@ -171,6 +171,73 @@ a {
   background-color: var(--surface-color-hover);
 }
 
+/* =========================================================================
+   Mobile Sidebar / Bottom Navigation Layout (Option B / A adaptively)
+   ========================================================================= */
+
+.app-sidebar {
+  width: 80px;
+  height: calc(100vh - 2rem);
+  margin: 1rem 0 1rem 1rem;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 1.5rem 0;
+  z-index: 1000;
+  flex-shrink: 0;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  position: relative;
+  border: 1px solid var(--border-color);
+}
+
+.nav-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  align-items: center;
+  width: 100%;
+}
+
+.sidebar-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.sidebar-icon-btn.active-nav {
+  background: var(--accent-color);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(187, 134, 252, 0.4);
+}
+
+.sidebar-icon-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.logout-btn {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  position: relative;
+  overflow: hidden;
+}
+
 /* --- Mobile Responsiveness --- */
 @media (max-width: 1440px) {
   /* xl spacing */
@@ -188,6 +255,62 @@ a {
     height: 100dvh !important;
   }
 
+  /* Option B: Compact Left Sticky Rail */
+  .app-sidebar {
+    width: 60px;
+    height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    border-right: 1px solid var(--border-color);
+    border-top: none;
+    border-bottom: none;
+    padding: 1rem 0 env(safe-area-inset-bottom) 0;
+    justify-content: flex-start;
+    position: fixed;
+    left: 0;
+    top: 0;
+  }
+
+  .nav-menu {
+    gap: 0.75rem;
+  }
+
+  .sidebar-icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .sidebar-icon-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .brand-logo {
+    display: flex !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .brand-logo span {
+    font-size: 0.9rem !important;
+  }
+
+  .main-wrapper {
+    margin-left: 60px; /* Offset for sticky left rail */
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  .focus-exit-btn {
+    position: relative !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+  }
+
   :root {
     --border-radius: 16px;
     --glass-blur: blur(12px);
@@ -201,11 +324,11 @@ a {
 
   /* Timer Mobile Adjustments (fluid scaling via component inline style overrides but global backup here) */
   [style*="fontSize: '12rem'"], [style*="fontSize: '11rem'"] {
-    font-size: clamp(4rem, 15vw, 6rem) !important;
+    font-size: clamp(56px, 16vw, 96px) !important;
   }
   
   [style*="fontSize: '7.5rem'"], [style*="fontSize: '7rem'"] {
-    font-size: clamp(3rem, 10vw, 4rem) !important;
+    font-size: clamp(40px, 12vw, 64px) !important;
     width: auto !important;
   }
 

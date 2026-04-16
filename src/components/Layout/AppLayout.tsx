@@ -65,52 +65,38 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
       )}
       
       {!isFocusMode && (
-        <aside className="glass-panel" style={styles.sidebar(isMobile)}>
-          <div style={styles.brand} className="mobile-hide">
-            <span style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+        <aside className="glass-panel app-sidebar">
+          <div style={styles.brand} className="mobile-hide brand-logo">
+            <span style={{ fontWeight: 800, fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
               s<span style={{ color: 'var(--accent-color)' }}>.fm</span>
             </span>
           </div>
 
-          <nav style={styles.nav(isMobile)}>
-            {isMobile ? (
-              <>
-                <NavItem icon={<TimerIcon size={24} />} label="Focus" active={activeSlide === 'timer'} onClick={() => setActiveSlide('timer')} />
-                <NavItem icon={<FileText size={24} />} label="Notes" active={activeSlide === 'notes'} onClick={() => setActiveSlide('notes')} />
-                <NavItem icon={<Music size={24} />} label="Music" active={activeSlide === 'media'} onClick={() => setActiveSlide('media')} />
-                <NavItem icon={<BarChart3 size={24} />} label="Progress" active={activeSlide === 'analytics'} onClick={() => setActiveSlide('analytics')} />
-                <NavItem icon={<Menu size={24} />} label="More" active={showMoreMenu} onClick={() => setShowMoreMenu(true)} />
-              </>
-            ) : (
-              <>
-                <NavItem icon={<TimerIcon size={22} />} label="Focus Timer" active={activeSlide === 'timer'} onClick={() => setActiveSlide('timer')} />
-                <NavItem icon={<MessageSquare size={22} />} label="Study Rooms" active={activeSlide === 'rooms'} onClick={() => setActiveSlide('rooms')} />
-                <NavItem icon={<Music size={22} />} label="Music" active={activeSlide === 'media'} onClick={() => setActiveSlide('media')} />
-                <NavItem icon={<BookOpen size={22} />} label="Planner" active={activeSlide === 'syllabus'} onClick={() => setActiveSlide('syllabus')} />
-                <NavItem icon={<FileText size={22} />} label="Notes" active={activeSlide === 'notes'} onClick={() => setActiveSlide('notes')} />
-                <NavItem icon={<BarChart3 size={22} />} label="Analytics" active={activeSlide === 'analytics'} onClick={() => setActiveSlide('analytics')} />
-                <NavItem icon={<Users size={22} />} label="Community" active={activeSlide === 'community'} onClick={() => setActiveSlide('community')} />
-                <NavItem icon={<Layers size={22} />} label="Flashcards" active={activeSlide === 'flashcards'} onClick={() => setActiveSlide('flashcards')} />
-                <NavItem icon={<Trophy size={22} />} label="Leaderboard" active={activeSlide === 'leaderboard'} onClick={() => setActiveSlide('leaderboard')} />
-                <NavItem icon={<Settings size={22} />} label="Settings" active={activeSlide === 'settings'} onClick={() => setActiveSlide('settings')} />
-              </>
-            )}
+          <nav className="nav-menu">
+            <NavItem icon={<TimerIcon />} label="Focus" active={activeSlide === 'timer'} onClick={() => setActiveSlide('timer')} />
+            <NavItem icon={<MessageSquare />} label="Rooms" active={activeSlide === 'rooms'} onClick={() => setActiveSlide('rooms')} />
+            <NavItem icon={<Music />} label="Music" active={activeSlide === 'media'} onClick={() => setActiveSlide('media')} />
+            <NavItem icon={<BookOpen />} label="Planner" active={activeSlide === 'syllabus'} onClick={() => setActiveSlide('syllabus')} />
+            <NavItem icon={<FileText />} label="Notes" active={activeSlide === 'notes'} onClick={() => setActiveSlide('notes')} />
+            <NavItem icon={<BarChart3 />} label="Analytics" active={activeSlide === 'analytics'} onClick={() => setActiveSlide('analytics')} />
+            <NavItem icon={<Users />} label="Community" active={activeSlide === 'community'} onClick={() => setActiveSlide('community')} />
+            <NavItem icon={<Layers />} label="Flashcards" active={activeSlide === 'flashcards'} onClick={() => setActiveSlide('flashcards')} className="desktop-only" />
+            <NavItem icon={<Trophy />} label="Leaderboard" active={activeSlide === 'leaderboard'} onClick={() => setActiveSlide('leaderboard')} className="desktop-only" />
+            <NavItem icon={<Settings />} label="Settings" active={activeSlide === 'settings'} onClick={() => setActiveSlide('settings')} />
           </nav>
 
-          {!isMobile && (
-            <nav style={{ ...styles.nav(false), marginTop: 'auto' }}>
-              <NavItem icon={<Target size={22} color={activeSlide === ('focus' as any) ? '#fff' : 'var(--accent-color)'} />} label="Focus Mode" active={activeSlide === ('focus' as any)} onClick={() => setActiveSlide('focus' as SlideId)} />
-              {user && (
-                <button onClick={logout} style={styles.logoutBtn} title="Log Out" className="nav-btn logout-btn">
-                  <LogOut size={22} color="var(--danger-color)" />
-                </button>
-              )}
-            </nav>
-          )}
+          <nav className="nav-menu" style={{ marginTop: 'auto' }}>
+            <NavItem icon={<Target color={activeSlide === ('focus' as any) ? '#fff' : 'var(--accent-color)'} />} label="Focus Mode" active={activeSlide === ('focus' as any)} onClick={() => setActiveSlide('focus' as SlideId)} />
+            {user && (
+              <button onClick={logout} className="nav-btn logout-btn sidebar-icon-btn" title="Log Out">
+                <LogOut color="var(--danger-color)" />
+              </button>
+            )}
+          </nav>
         </aside>
       )}
 
-      <div style={styles.mainWrapper(isMobile)}>
+      <div className="main-wrapper">
         {!isFocusMode && <Navbar />}
         <main id="main-scroll-area" style={styles.main(isFocusMode, isMobile)}>
           <div style={styles.contentWrapper(isMobile)}>
@@ -158,17 +144,11 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
   );
 };
 
-const NavItem = ({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) => (
+const NavItem = ({ icon, label, active, onClick, className = '' }: any) => (
   <button 
     onClick={onClick}
-    style={{
-      ...styles.navItem,
-      background: active ? 'var(--accent-color)' : 'transparent',
-      color: active ? '#fff' : 'var(--text-secondary)',
-      boxShadow: active ? '0 4px 12px rgba(187, 134, 252, 0.4)' : 'none'
-    }}
+    className={`nav-btn sidebar-icon-btn ${active ? 'active-nav' : ''} ${className}`}
     title={label}
-    className="nav-btn"
   >
     {icon}
   </button>
@@ -190,69 +170,9 @@ const styles = {
     position: 'relative' as const,
     overflow: 'hidden',
   },
-  sidebar: (isMobile: boolean) => ({
-    width: isMobile ? '100%' : '80px',
-    height: isMobile ? 'calc(70px + env(safe-area-inset-bottom))' : 'calc(100vh - 2rem)',
-    margin: isMobile ? '0' : '1rem 0 1rem 1rem',
-    borderRadius: isMobile ? '0' : '20px',
-    display: 'flex',
-    flexDirection: isMobile ? 'row' as const : 'column' as const,
-    alignItems: 'center',
-    justifyContent: isMobile ? 'space-around' : 'flex-start',
-    padding: isMobile ? '0' : '1.5rem 0',
-    paddingBottom: isMobile ? 'env(safe-area-inset-bottom)' : '1.5rem',
-    zIndex: 1000,
-    flexShrink: 0,
-    boxShadow: isMobile ? '0 -4px 20px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.3)',
-    position: isMobile ? 'fixed' as const : 'relative' as const,
-    bottom: isMobile ? 0 : 'auto',
-    left: isMobile ? 0 : 'auto',
-    border: isMobile ? 'none' : '1px solid var(--border-color)',
-    borderTop: isMobile ? '1px solid var(--border-color)' : '1px solid var(--border-color)',
-  }),
   brand: {
     marginBottom: '2rem',
   },
-  nav: (isMobile: boolean) => ({
-    display: 'flex',
-    flexDirection: isMobile ? 'row' as const : 'column' as const,
-    gap: isMobile ? '0.25rem' : '1.25rem',
-    alignItems: 'center',
-    justifyContent: isMobile ? 'space-around' : 'flex-start',
-    width: '100%',
-  }),
-  navItem: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '42px',
-    height: '42px',
-    borderRadius: '12px',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    border: 'none',
-    cursor: 'pointer',
-  },
-  logoutBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '48px',
-    height: '48px',
-    borderRadius: '14px',
-    transition: 'all 0.3s',
-    background: 'rgba(239, 68, 68, 0.05)',
-    border: 'none',
-    cursor: 'pointer',
-  },
-  mainWrapper: (isMobile: boolean) => ({
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    height: '100dvh',
-    position: 'relative' as const,
-    paddingBottom: isMobile ? 'calc(70px + env(safe-area-inset-bottom))' : '0',
-    overflow: 'hidden',
-  }),
   main: (isFocusMode: boolean, isMobile: boolean) => ({
     flex: 1,
     overflow: 'hidden' as const,
