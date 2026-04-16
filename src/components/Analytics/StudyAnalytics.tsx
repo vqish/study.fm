@@ -289,26 +289,79 @@ const MonthHeatmap = ({ sessions }: { sessions: any[] }) => {
 };
 
 const TrendChart = ({ studyStats, period }: { studyStats: any[], period: Period }) => {
-  const labels = period === 'daily' ? ['00', '03', '06', '09', '12', '15', '18', '21'] : 
-                 period === 'weekly' ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : 
-                 period === 'monthly' ? ['W1', 'W2', 'W3', 'W4'] : 
-                 ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+  const { labels, buckets } = useMemo(() => {
+    const now = new Date();
+    
+    if (period === 'daily') {
+      const lbls = ['12a','3a','6a','9a','12p','3p','6p','9p'];
+      const bkts = new Array(8).fill(0);
+      studyStats.forEach(s => {
+        const d = s.timestamp?.toDate ? s.timestamp.toDate() : new Date(s.timestamp);
+        if (!isNaN(d.getTime())) {
+          const today = new Date(); today.setHours(0,0,0,0);
+          if (d >= today) bkts[Math.floor(d.getHours() / 3)] += s.minutes;
+        }
+      });
+      return { labels: lbls, buckets: bkts };
+    }
+    
+    if (period === 'weekly') {
+      const lbls = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      const bkts = new Array(7).fill(0);
+      const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+      studyStats.forEach(s => {
+        const d = new Date(s.dateStr || (s.timestamp?.toDate ? s.timestamp.toDate() : s.timestamp));
+        if (d >= weekAgo) {
+          const day = d.getDay(); // 0=Sun
+          bkts[day === 0 ? 6 : day - 1] += s.minutes;
+        }
+      });
+      return { labels: lbls, buckets: bkts };
+    }
+    
+    if (period === 'monthly') {
+      const lbls = ['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5'];
+      const bkts = new Array(5).fill(0);
+      studyStats.forEach(s => {
+        const d = new Date(s.dateStr || (s.timestamp?.toDate ? s.timestamp.toDate() : s.timestamp));
+        if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+          bkts[Math.min(4, Math.floor((d.getDate() - 1) / 7))] += s.minutes;
+        }
+      });
+      return { labels: lbls, buckets: bkts };
+    }
+    
+    // yearly
+    const lbls = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const bkts = new Array(12).fill(0);
+    studyStats.forEach(s => {
+      const d = new Date(s.dateStr || (s.timestamp?.toDate ? s.timestamp.toDate() : s.timestamp));
+      if (d.getFullYear() === now.getFullYear()) bkts[d.getMonth()] += s.minutes;
+    });
+    return { labels: lbls, buckets: bkts };
+  }, [studyStats, period]);
+
+  const maxVal = Math.max(...buckets, 1);
 
   return (
     <div style={styles.chartWrapper}>
        {labels.map((label, i) => {
-         // Create organic height for visual appeal
-         const height = studyStats.length > 0 ? (Math.sin(i * 0.5) * 30 + 50) + (Math.random() * 20) : 10;
+         const pct = Math.max(4, (buckets[i] / maxVal) * 100);
+         const hasData = buckets[i] > 0;
          return (
            <div key={label + i} style={styles.chartCol}>
-              <div 
+              <div
+                title={`${label}: ${Math.floor(buckets[i]/60)}h ${buckets[i]%60}m`}
                 style={{ 
                   width: '70%', 
-                  height: `${height}%`, 
-                  minHeight: '6px', 
-                  background: 'linear-gradient(to top, rgba(187, 134, 252, 0.4), var(--accent-color))', 
+                  height: `${pct}%`, 
+                  minHeight: '4px',
+                  background: hasData 
+                    ? 'linear-gradient(to top, rgba(187, 134, 252, 0.5), var(--accent-color))'
+                    : 'rgba(255,255,255,0.04)',
                   borderRadius: '6px 6px 0 0',
-                  boxShadow: '0 4px 12px rgba(187,134,252,0.1)'
+                  boxShadow: hasData ? '0 4px 12px rgba(187,134,252,0.2)' : 'none',
+                  transition: 'height 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
                 }} 
                 className="hover-grow" 
               />
