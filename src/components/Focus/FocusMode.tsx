@@ -40,6 +40,44 @@ export const FocusMode = ({
 
   return (
     <div style={styles.container(isMobile)}>
+      <style>{`
+        .focus-layout {
+          display: grid;
+          grid-template-columns: 60% 40%;
+          gap: 2rem;
+          height: 100%;
+          width: 100%;
+          padding: 2rem;
+          box-sizing: border-box;
+        }
+        .focus-left {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .focus-right {
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          padding: 2rem 2rem 2rem 0;
+        }
+        
+        @media (max-width: 1440px) {
+          .focus-layout { grid-template-columns: 55% 45%; }
+        }
+        @media (max-width: 1024px) {
+          .focus-layout { 
+            grid-template-columns: 1fr; 
+            padding: 1.5rem;
+            overflow-y: auto;
+          }
+          .focus-right { padding: 0; align-items: center; }
+        }
+        @media (max-width: 768px) {
+          .focus-layout { padding: 1rem; gap: 1.5rem; }
+        }
+      `}</style>
+      
       {/* 1. EXIT BUTTON - Fixed Top Right */}
       <button 
         onClick={onExit}
@@ -50,79 +88,76 @@ export const FocusMode = ({
       </button>
 
       {/* 2. MAIN SPLIT LAYOUT */}
-      <div style={styles.layout(isMobile)}>
+      <div className="focus-layout">
         
         {/* LEFT 60% - TIMER */}
-        <div style={styles.leftCol}>
+        <div className="focus-left">
            <div style={styles.timerWrapper}>
               <Timer />
            </div>
         </div>
 
         {/* RIGHT 40% - CONTROLS */}
-        {!isMobile && (
-          <div style={styles.rightCol}>
-            <div style={styles.controlsStack}>
+        <div className="focus-right">
+          <div style={styles.controlsStack}>
+            
+            {/* Atmosphere Card */}
+            <div className="glass-panel" style={styles.card}>
+              <h4 style={styles.cardHeader}>Atmosphere</h4>
+              <div style={styles.themeGrid}>
+                {themes.map(t => (
+                  <button 
+                    key={t.name}
+                    onClick={() => onAtmosphereChange(t.type as any, t.url)} 
+                    style={styles.themeBtn}
+                    className="hover-grow"
+                  >
+                    {t.icon}
+                    <span>{t.name}</span>
+                  </button>
+                ))}
+              </div>
               
-              {/* Atmosphere Card */}
-              <div className="glass-panel" style={styles.card}>
-                <h4 style={styles.cardHeader}>Atmosphere</h4>
-                <div style={styles.themeGrid}>
-                  {themes.map(t => (
-                    <button 
-                      key={t.name}
-                      onClick={() => onAtmosphereChange(t.type as any, t.url)} 
-                      style={styles.themeBtn}
-                      className="hover-grow"
-                    >
-                      {t.icon}
-                      <span>{t.name}</span>
-                    </button>
-                  ))}
+              <div style={styles.divider} />
+              
+              <div style={styles.sliderRow}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <label style={styles.label}>Brightness</label>
+                  <span style={styles.valueText}>{ambientBrightness}%</span>
                 </div>
-                
-                <div style={styles.divider} />
-                
-                <div style={styles.sliderRow}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <label style={styles.label}>Brightness</label>
-                    <span style={styles.valueText}>{ambientBrightness}%</span>
-                  </div>
+                <input 
+                  type="range" 
+                  min="10" max="100" 
+                  value={ambientBrightness} 
+                  onChange={e => onBrightnessChange(Number(e.target.value))}
+                  style={styles.range}
+                />
+              </div>
+
+              <div style={styles.divider} />
+
+              <div>
+                <h4 style={styles.subHeader}>Custom Background</h4>
+                <form onSubmit={onCustomBgSubmit} style={styles.form}>
                   <input 
-                    type="range" 
-                    min="10" max="100" 
-                    value={ambientBrightness} 
-                    onChange={e => onBrightnessChange(Number(e.target.value))}
-                    style={styles.range}
+                    type="text" 
+                    placeholder="Image/Video URL" 
+                    value={customBgUrl} 
+                    onChange={e => onCustomBgChange(e.target.value)} 
+                    style={styles.input} 
                   />
-                </div>
-
-                <div style={styles.divider} />
-
-                <div>
-                  <h4 style={styles.subHeader}>Custom Background</h4>
-                  <form onSubmit={onCustomBgSubmit} style={styles.form}>
-                    <input 
-                      type="text" 
-                      placeholder="Image/Video URL" 
-                      value={customBgUrl} 
-                      onChange={e => onCustomBgChange(e.target.value)} 
-                      style={styles.input} 
-                    />
-                    <button type="submit" className="primary-btn" style={styles.btn}>Set</button>
-                  </form>
-                </div>
+                  <button type="submit" className="primary-btn" style={styles.btn}>Set</button>
+                </form>
               </div>
-
-              {/* Dynamic Quote Widget */}
-              <div style={styles.quoteBox}>
-                <Quotes />
-              </div>
-
-              {/* Mini Player sits at the bottom or as a draggable */}
             </div>
+
+            {/* Dynamic Quote Widget */}
+            <div style={styles.quoteBox}>
+              <Quotes />
+            </div>
+
           </div>
-        )}
+        </div>
       </div>
 
       {/* 3. MOBILE OVERLAY CONTROLS (Floating if mobile) */}
@@ -163,40 +198,19 @@ const styles = {
     fontWeight: 700,
     boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
   },
-  layout: (isMobile: boolean): React.CSSProperties => ({
-    display: 'flex',
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    flexDirection: isMobile ? 'column' : 'row'
-  }),
-  leftCol: {
-    flex: 6,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '2rem'
-  },
-  rightCol: {
-    flex: 4,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    padding: '4rem 3rem 2rem 0',
-    justifyContent: 'center'
-  },
   timerWrapper: {
     width: '100%',
     maxWidth: '800px',
     display: 'flex',
     justifyContent: 'center',
-    transform: 'scale(1.1)'
+    transform: 'scale(1.05)'
   },
   controlsStack: {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '2rem',
-    maxWidth: '400px',
-    alignSelf: 'flex-start'
+    width: '100%',
+    maxWidth: '440px',
   },
   card: {
     padding: '2rem',

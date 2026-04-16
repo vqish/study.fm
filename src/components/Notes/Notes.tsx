@@ -289,6 +289,7 @@ export const Notes = () => {
                   </div>
                 </div>
               </div>
+            </div>
 
               <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, flexWrap: 'wrap' }}>
                 <button onClick={manualSave} className="secondary-btn mobile-hide" style={styles.metaBtn} title="Save now">
