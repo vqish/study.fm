@@ -40,15 +40,17 @@ export const FocusMode = ({
 
   return (
     <div style={styles.container(isMobile)}>
-      <style>{`
         .focus-layout {
           display: grid;
-          grid-template-columns: 60% 40%;
+          grid-template-columns: 62% 38%;
           gap: 2rem;
           height: 100%;
           width: 100%;
-          padding: 2rem;
+          max-width: 1600px;
+          margin: 0 auto;
+          padding: 32px;
           box-sizing: border-box;
+          position: relative;
         }
         .focus-left {
           display: flex;
@@ -58,37 +60,44 @@ export const FocusMode = ({
         .focus-right {
           display: flex;
           flex-direction: column;
-          justify-content: flex-start;
-          padding: 2rem 2rem 2rem 0;
+          justify-content: center;
+          gap: 24px;
         }
-        
         @media (max-width: 1440px) {
-          .focus-layout { grid-template-columns: 55% 45%; }
+          .focus-layout { grid-template-columns: 60% 40%; }
         }
         @media (max-width: 1024px) {
           .focus-layout { 
             grid-template-columns: 1fr; 
-            padding: 1.5rem;
+            padding: 24px;
             overflow-y: auto;
           }
           .focus-right { padding: 0; align-items: center; }
         }
         @media (max-width: 768px) {
-          .focus-layout { padding: 1rem; gap: 1.5rem; }
+          .focus-layout { 
+            display: flex;
+            flex-direction: column;
+            padding: 16px; 
+            gap: 24px; 
+            overflow-y: auto;
+          }
+          .focus-right { width: 100%; align-items: stretch; justify-content: flex-start; }
+          .focus-left { margin-top: 60px; } /* Leave space for exit button on top */
         }
       `}</style>
       
-      {/* 1. EXIT BUTTON - Fixed Top Right */}
-      <button 
-        onClick={onExit}
-        style={styles.exitBtn}
-        className="focus-exit-btn hover-grow"
-      >
-        <Minimize size={20} /> Exit Focus
-      </button>
-
       {/* 2. MAIN SPLIT LAYOUT */}
       <div className="focus-layout">
+        
+        {/* 1. EXIT BUTTON - Top Right aligned to container */}
+        <button 
+          onClick={onExit}
+          style={styles.exitBtn(isMobile)}
+          className="hover-grow"
+        >
+          <Minimize size={20} /> Exit Focus
+        </button>
         
         {/* LEFT 60% - TIMER */}
         <div className="focus-left">
@@ -97,9 +106,9 @@ export const FocusMode = ({
            </div>
         </div>
 
-        {/* RIGHT 40% - CONTROLS */}
+        {/* RIGHT 38% - CONTROLS */}
         <div className="focus-right">
-          <div style={styles.controlsStack}>
+          <div style={styles.controlsStack(isMobile)}>
             
             {/* Atmosphere Card */}
             <div className="glass-panel" style={styles.card}>
@@ -181,15 +190,15 @@ const styles = {
     padding: isMobile ? '1rem' : '0',
     animation: 'fadeIn 1s ease'
   }),
-  exitBtn: {
-    position: 'absolute' as const,
-    top: '2rem',
-    right: '2rem',
+  exitBtn: (isMobile: boolean): React.CSSProperties => ({
+    position: 'absolute',
+    top: isMobile ? '16px' : '32px',
+    right: isMobile ? '16px' : '32px',
     zIndex: 100,
     display: 'flex',
     alignItems: 'center',
-    gap: '0.6rem',
-    padding: '0.8rem 1.75rem',
+    gap: '8px',
+    padding: '12px 24px',
     borderRadius: '16px',
     background: 'rgba(255,255,255,0.08)',
     backdropFilter: 'blur(20px)',
@@ -197,7 +206,7 @@ const styles = {
     border: '1px solid rgba(255,255,255,0.15)',
     fontWeight: 700,
     boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-  },
+  }),
   timerWrapper: {
     width: '100%',
     maxWidth: '800px',
@@ -205,22 +214,22 @@ const styles = {
     justifyContent: 'center',
     transform: 'scale(1.05)'
   },
-  controlsStack: {
+  controlsStack: (isMobile: boolean) => ({
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '2rem',
+    gap: '24px',
     width: '100%',
-    maxWidth: '440px',
-  },
+    maxWidth: isMobile ? '100%' : '500px',
+  }),
   card: {
-    padding: '2rem',
-    background: 'rgba(0,0,0,0.3)',
+    padding: '24px',
+    background: 'rgba(0,0,0,0.4)',
     backdropFilter: 'blur(24px)',
     borderRadius: '24px',
     border: '1px solid rgba(255,255,255,0.1)',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '1.25rem',
+    gap: '20px',
     boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
   },
   cardHeader: {

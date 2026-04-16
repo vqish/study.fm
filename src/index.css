@@ -255,20 +255,13 @@ a {
     height: 100dvh !important;
   }
 
-  /* Option B: Compact Left Sticky Rail */
+  /* Hide Sidebar completely for Mobile, replace with BottomNav */
   .app-sidebar {
-    width: 60px;
-    height: 100dvh;
-    margin: 0;
-    border-radius: 0;
-    border-right: 1px solid var(--border-color);
-    border-top: none;
-    border-bottom: none;
-    padding: 1rem 0 env(safe-area-inset-bottom) 0;
-    justify-content: flex-start;
-    position: fixed;
-    left: 0;
-    top: 0;
+    display: none !important;
+  }
+
+  .main-wrapper {
+    margin-left: 0; 
   }
 
   .nav-menu {
@@ -295,7 +288,8 @@ a {
   }
 
   .main-wrapper {
-    margin-left: 60px; /* Offset for sticky left rail */
+    margin-left: 0;
+    padding-bottom: 70px; /* Space for bottom nav */
   }
 
   .desktop-only {

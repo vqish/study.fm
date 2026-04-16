@@ -151,7 +151,17 @@ export const Timer = () => {
 
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', gap: '2rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', gap: '32px' }}>
+      <style>{`
+        .responsive-timer-text {
+          font-size: clamp(120px, 14vw, 220px);
+        }
+        @media (max-width: 768px) {
+          .responsive-timer-text {
+            font-size: clamp(56px, 18vw, 90px);
+          }
+        }
+      `}</style>
       <div style={{ display: 'flex', gap: '0.4rem', background: 'rgba(0,0,0,0.4)', padding: '0.4rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' }}>
         <button onClick={() => setMode('pomodoro')} disabled={isPomoActive || isCdActive || isSwActive} style={{ ...styles.modeBtn, background: mode === 'pomodoro' ? 'var(--accent-color)' : 'transparent', color: mode === 'pomodoro' ? '#fff' : 'var(--text-secondary)' }}>
           Pomodoro
@@ -199,7 +209,7 @@ export const Timer = () => {
             </div>
           </div>
         ) : (
-          <div style={styles.timeText}>{formatTime(mode === 'pomodoro' ? pomoTime : mode === 'countdown' ? cdTime : swTime)}</div>
+          <div className="responsive-timer-text" style={styles.timeText}>{formatTime(mode === 'pomodoro' ? pomoTime : mode === 'countdown' ? cdTime : swTime)}</div>
         )}
 
         <div style={styles.controls}>
@@ -263,8 +273,8 @@ const styles = {
   displayBoard: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', width: '100%' },
   topSection: { height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   subMode: { fontSize: '0.95rem', cursor: 'pointer', padding: '0.4rem 0.8rem', transition: 'all 0.2s', whiteSpace: 'nowrap' },
-  timeText: { fontSize: 'clamp(4.5rem, 15vw, 9rem)', fontWeight: 900, fontFamily: "'Outfit', sans-serif", letterSpacing: '-5px', color: '#fff', textShadow: '0 10px 40px rgba(0,0,0,0.5)', lineHeight: 1 },
-  controls: { display: 'flex', gap: '2rem', alignItems: 'center', marginTop: '2rem' },
+  timeText: { fontWeight: 900, fontFamily: "'Outfit', sans-serif", letterSpacing: '-5px', color: '#fff', textShadow: '0 10px 40px rgba(0,0,0,0.5)', lineHeight: 1 },
+  controls: { display: 'flex', gap: '24px', alignItems: 'center', marginTop: '32px' },
   actionBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '90px', width: '90px', height: '90px', borderRadius: '50%', boxShadow: '0 10px 30px rgba(187, 134, 252, 0.4)', transition: 'transform 0.2s', border: 'none' },
   resetBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', minWidth: '56px', width: '56px', height: '56px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', cursor: 'pointer' },
   timeInput: { fontSize: 'clamp(3rem, 10vw, 6rem)', fontWeight: 900, fontFamily: "'Outfit', sans-serif", background: 'transparent', border: 'none', color: '#fff', width: 'clamp(80px, 20vw, 130px)', textAlign: 'center' as const, outline: 'none', borderBottom: '2px solid rgba(255,255,255,0.1)' },

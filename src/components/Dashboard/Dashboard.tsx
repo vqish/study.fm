@@ -87,11 +87,11 @@ export const Dashboard = ({ activeSlide, setActiveSlide }: { activeSlide: SlideI
       </div>
 
       {/* 2. Rooms */}
-      <div style={{ ...getSlideStyle('rooms'), gap: '1.5rem', height: '100%', width: '100%' }}>
-        <div className="slide-content glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <div style={{ ...getSlideStyle('rooms'), gap: '24px', height: '100%', width: '100%', flexDirection: isMobile ? 'column' : 'row' }}>
+        <div className="slide-content glass-panel" style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
           <RoomManager />
         </div>
-        <div className="slide-content glass-panel" style={{ flex: 1.5, padding: '2rem', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+        <div className="slide-content glass-panel" style={{ flex: 1.5, padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
           <Chat />
         </div>
       </div>

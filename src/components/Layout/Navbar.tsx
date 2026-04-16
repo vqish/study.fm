@@ -57,177 +57,337 @@ export const Navbar = () => {
   };
 
   return (
-    <header style={styles.navbar} className="glass-panel">
-      <div style={styles.left}>
-        <div style={styles.searchBox(isMobile)}>
-          <Search size={18} color="var(--text-secondary)" />
-          <input 
-            type="text" 
-            placeholder={isMobile ? "Search..." : "Search subjects, topics or rooms..."} 
-            style={styles.searchInput}
-          />
+    <header style={styles.navbar(isMobile)} className="glass-panel">
+      {isMobile ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+             <div style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+                s<span style={{ color: 'var(--accent-color)' }}>.fm</span>
+             </div>
+             <div style={styles.right}>
+               {/* Notifications Bell */}
+               <div ref={notifRef} style={{ position: 'relative' }}>
+                 <button 
+                   style={{ ...styles.iconBtn, position: 'relative' }} 
+                   onClick={() => { setShowNotifications(!showNotifications); setShowProfileMenu(false); }}
+                   title="Notifications"
+                 >
+                   <Bell size={20} color={showNotifications ? 'var(--accent-color)' : 'var(--text-secondary)'} />
+                   {unreadCount > 0 && (
+                     <span style={{
+                       position: 'absolute', top: '2px', right: '2px',
+                       width: '18px', height: '18px', borderRadius: '50%',
+                       background: 'var(--accent-color)', color: '#fff',
+                       fontSize: '0.65rem', fontWeight: 800,
+                       display: 'flex', alignItems: 'center', justifyContent: 'center',
+                       border: '2px solid var(--surface-color)'
+                     }}>
+                       {unreadCount}
+                     </span>
+                   )}
+                 </button>
+
+                 {showNotifications && (
+                   <div className="glass-panel" style={styles.notifPanel(isMobile)}>
+                     {/* Header */}
+                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem 0.75rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                       <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>
+                         Notifications {unreadCount > 0 && <span style={{ color: 'var(--accent-color)', fontSize: '0.8rem' }}>({unreadCount} new)</span>}
+                       </span>
+                       <div style={{ display: 'flex', gap: '0.5rem' }}>
+                         {unreadCount > 0 && (
+                           <button onClick={markAllRead} style={styles.notifAction} title="Mark all read">
+                             <Check size={14} /> All read
+                           </button>
+                         )}
+                         {notifications.length > 0 && (
+                           <button onClick={dismissAll} style={{ ...styles.notifAction, color: 'var(--danger-color)' }} title="Clear all">
+                             <Trash2 size={14} />
+                           </button>
+                         )}
+                       </div>
+                     </div>
+
+                     {/* Notification list */}
+                     <div style={{ maxHeight: '360px', overflowY: 'auto', padding: '0.5rem' }}>
+                       {notifications.length === 0 ? (
+                         <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                           <Bell size={36} style={{ opacity: 0.2, marginBottom: '0.75rem' }} />
+                           <p style={{ fontSize: '0.9rem' }}>All caught up!</p>
+                           <p style={{ fontSize: '0.8rem', marginTop: '0.25rem', opacity: 0.6 }}>No new notifications</p>
+                         </div>
+                       ) : (
+                         notifications.map(n => (
+                           <div 
+                             key={n.id}
+                             onClick={() => markRead(n.id)}
+                             style={{
+                               display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+                               padding: '0.85rem 0.75rem', borderRadius: '12px',
+                               background: n.read ? 'transparent' : 'rgba(187,134,252,0.06)',
+                               border: n.read ? '1px solid transparent' : '1px solid rgba(187,134,252,0.12)',
+                               marginBottom: '0.35rem', cursor: 'pointer',
+                               transition: 'all 0.2s', position: 'relative'
+                             }}
+                           >
+                             {/* Unread dot */}
+                             {!n.read && (
+                               <div style={{ position: 'absolute', top: '0.75rem', left: '0.5rem', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-color)', flexShrink: 0 }} />
+                             )}
+                             {/* Type indicator bar */}
+                             <div style={{ width: '3px', borderRadius: '4px', background: notifColor[n.type] || 'var(--accent-color)', alignSelf: 'stretch', flexShrink: 0, minHeight: '36px' }} />
+                             <div style={{ flex: 1, minWidth: 0 }}>
+                               <p style={{ fontSize: '0.85rem', fontWeight: n.read ? 500 : 700, color: '#fff', marginBottom: '0.2rem' }}>{n.title}</p>
+                               <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>{n.body}</p>
+                               <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginTop: '0.3rem' }}>{n.time}</p>
+                             </div>
+                             <button 
+                               onClick={(e) => { e.stopPropagation(); dismissOne(n.id); }}
+                               style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', padding: '0.2rem', borderRadius: '6px', flexShrink: 0 }}
+                             >
+                               <X size={14} />
+                             </button>
+                           </div>
+                         ))
+                       )}
+                     </div>
+                   </div>
+                 )}
+               </div>
+
+               <div style={styles.divider} className="mobile-hide" />
+
+               {user ? (
+                 <div ref={profileRef} style={{ position: 'relative' }}>
+                   <button 
+                     onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifications(false); }}
+                     style={styles.profileBtn}
+                   >
+                     {user.photoURL ? (
+                       <img src={user.photoURL} alt={user.displayName} style={styles.avatar} />
+                     ) : (
+                       <div style={styles.avatarPlaceholder}>{user.displayName.charAt(0).toUpperCase()}</div>
+                     )}
+                     <div style={styles.userInfo}>
+                       <span style={styles.userName}>{user.displayName}</span>
+                       <span style={styles.userMajor}>{user.major || 'Student'}</span>
+                     </div>
+                     <ChevronDown size={16} color="var(--text-secondary)" style={{ transform: showProfileMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                   </button>
+
+                   {showProfileMenu && (
+                     <div style={styles.dropdown(isMobile)} className="glass-panel">
+                       <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '0.5rem' }}>
+                         <p style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff' }}>{user.displayName}</p>
+                         <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user.email}</p>
+                       </div>
+                       <button style={styles.dropdownItem}><User size={16} /> My Profile</button>
+                       <button style={styles.dropdownItem}><Settings size={16} /> Preferences</button>
+                       <div style={styles.dropdownDivider} />
+                       <button 
+                         onClick={() => { logout(); setShowProfileMenu(false); }}
+                         style={{ ...styles.dropdownItem, color: 'var(--danger-color)' }}
+                       >
+                         <LogOut size={16} /> Sign Out
+                       </button>
+                     </div>
+                   )}
+                 </div>
+               ) : (
+                 <button 
+                   onClick={() => setShowAuthModal(true)}
+                   style={styles.authBtn}
+                   className="primary-btn"
+                 >
+                   <LogIn size={18} />
+                   <span>{isMobile ? 'Login' : 'Login / Sign Up'}</span>
+                 </button>
+               )}
+             </div>
+          </div>
+          <div style={{ ...styles.searchBox(true), maxWidth: '100%' }}>
+            <Search size={18} color="var(--text-secondary)" />
+            <input 
+              type="text" 
+              placeholder="Search..." 
+              style={styles.searchInput}
+            />
+          </div>
         </div>
-      </div>
+      ) : (
+        <>
+          <div style={styles.left}>
+            <div style={styles.searchBox(false)}>
+              <Search size={18} color="var(--text-secondary)" />
+              <input 
+                type="text" 
+                placeholder="Search subjects, topics or rooms..." 
+                style={styles.searchInput}
+              />
+            </div>
+          </div>
 
-      <div style={styles.right}>
-        {/* Notifications Bell */}
-        <div ref={notifRef} style={{ position: 'relative' }}>
-          <button 
-            style={{ ...styles.iconBtn, position: 'relative' }} 
-            onClick={() => { setShowNotifications(!showNotifications); setShowProfileMenu(false); }}
-            title="Notifications"
-          >
-            <Bell size={20} color={showNotifications ? 'var(--accent-color)' : 'var(--text-secondary)'} />
-            {unreadCount > 0 && (
-              <span style={{
-                position: 'absolute', top: '2px', right: '2px',
-                width: '18px', height: '18px', borderRadius: '50%',
-                background: 'var(--accent-color)', color: '#fff',
-                fontSize: '0.65rem', fontWeight: 800,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: '2px solid var(--surface-color)'
-              }}>
-                {unreadCount}
-              </span>
-            )}
-          </button>
+          <div style={styles.right}>
+            {/* Notifications Bell */}
+            <div ref={notifRef} style={{ position: 'relative' }}>
+              <button 
+                style={{ ...styles.iconBtn, position: 'relative' }} 
+                onClick={() => { setShowNotifications(!showNotifications); setShowProfileMenu(false); }}
+                title="Notifications"
+              >
+                <Bell size={20} color={showNotifications ? 'var(--accent-color)' : 'var(--text-secondary)'} />
+                {unreadCount > 0 && (
+                  <span style={{
+                    position: 'absolute', top: '2px', right: '2px',
+                    width: '18px', height: '18px', borderRadius: '50%',
+                    background: 'var(--accent-color)', color: '#fff',
+                    fontSize: '0.65rem', fontWeight: 800,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '2px solid var(--surface-color)'
+                  }}>
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
 
-          {showNotifications && (
-            <div className="glass-panel" style={styles.notifPanel(isMobile)}>
-              {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem 0.75rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>
-                  Notifications {unreadCount > 0 && <span style={{ color: 'var(--accent-color)', fontSize: '0.8rem' }}>({unreadCount} new)</span>}
-                </span>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {unreadCount > 0 && (
-                    <button onClick={markAllRead} style={styles.notifAction} title="Mark all read">
-                      <Check size={14} /> All read
-                    </button>
-                  )}
-                  {notifications.length > 0 && (
-                    <button onClick={dismissAll} style={{ ...styles.notifAction, color: 'var(--danger-color)' }} title="Clear all">
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Notification list */}
-              <div style={{ maxHeight: '360px', overflowY: 'auto', padding: '0.5rem' }}>
-                {notifications.length === 0 ? (
-                  <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    <Bell size={36} style={{ opacity: 0.2, marginBottom: '0.75rem' }} />
-                    <p style={{ fontSize: '0.9rem' }}>All caught up!</p>
-                    <p style={{ fontSize: '0.8rem', marginTop: '0.25rem', opacity: 0.6 }}>No new notifications</p>
-                  </div>
-                ) : (
-                  notifications.map(n => (
-                    <div 
-                      key={n.id}
-                      onClick={() => markRead(n.id)}
-                      style={{
-                        display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
-                        padding: '0.85rem 0.75rem', borderRadius: '12px',
-                        background: n.read ? 'transparent' : 'rgba(187,134,252,0.06)',
-                        border: n.read ? '1px solid transparent' : '1px solid rgba(187,134,252,0.12)',
-                        marginBottom: '0.35rem', cursor: 'pointer',
-                        transition: 'all 0.2s', position: 'relative'
-                      }}
-                    >
-                      {/* Unread dot */}
-                      {!n.read && (
-                        <div style={{ position: 'absolute', top: '0.75rem', left: '0.5rem', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-color)', flexShrink: 0 }} />
+              {showNotifications && (
+                <div className="glass-panel" style={styles.notifPanel(isMobile)}>
+                  {/* Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem 0.75rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>
+                      Notifications {unreadCount > 0 && <span style={{ color: 'var(--accent-color)', fontSize: '0.8rem' }}>({unreadCount} new)</span>}
+                    </span>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {unreadCount > 0 && (
+                        <button onClick={markAllRead} style={styles.notifAction} title="Mark all read">
+                          <Check size={14} /> All read
+                        </button>
                       )}
-                      {/* Type indicator bar */}
-                      <div style={{ width: '3px', borderRadius: '4px', background: notifColor[n.type] || 'var(--accent-color)', alignSelf: 'stretch', flexShrink: 0, minHeight: '36px' }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: '0.85rem', fontWeight: n.read ? 500 : 700, color: '#fff', marginBottom: '0.2rem' }}>{n.title}</p>
-                        <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>{n.body}</p>
-                        <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginTop: '0.3rem' }}>{n.time}</p>
-                      </div>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); dismissOne(n.id); }}
-                        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', padding: '0.2rem', borderRadius: '6px', flexShrink: 0 }}
-                      >
-                        <X size={14} />
-                      </button>
+                      {notifications.length > 0 && (
+                        <button onClick={dismissAll} style={{ ...styles.notifAction, color: 'var(--danger-color)' }} title="Clear all">
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
-                  ))
+                  </div>
+
+                  {/* Notification list */}
+                  <div style={{ maxHeight: '360px', overflowY: 'auto', padding: '0.5rem' }}>
+                    {notifications.length === 0 ? (
+                      <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                        <Bell size={36} style={{ opacity: 0.2, marginBottom: '0.75rem' }} />
+                        <p style={{ fontSize: '0.9rem' }}>All caught up!</p>
+                        <p style={{ fontSize: '0.8rem', marginTop: '0.25rem', opacity: 0.6 }}>No new notifications</p>
+                      </div>
+                    ) : (
+                      notifications.map(n => (
+                        <div 
+                          key={n.id}
+                          onClick={() => markRead(n.id)}
+                          style={{
+                            display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+                            padding: '0.85rem 0.75rem', borderRadius: '12px',
+                            background: n.read ? 'transparent' : 'rgba(187,134,252,0.06)',
+                            border: n.read ? '1px solid transparent' : '1px solid rgba(187,134,252,0.12)',
+                            marginBottom: '0.35rem', cursor: 'pointer',
+                            transition: 'all 0.2s', position: 'relative'
+                          }}
+                        >
+                          {/* Unread dot */}
+                          {!n.read && (
+                            <div style={{ position: 'absolute', top: '0.75rem', left: '0.5rem', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-color)', flexShrink: 0 }} />
+                          )}
+                          {/* Type indicator bar */}
+                          <div style={{ width: '3px', borderRadius: '4px', background: notifColor[n.type] || 'var(--accent-color)', alignSelf: 'stretch', flexShrink: 0, minHeight: '36px' }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: '0.85rem', fontWeight: n.read ? 500 : 700, color: '#fff', marginBottom: '0.2rem' }}>{n.title}</p>
+                            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>{n.body}</p>
+                            <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginTop: '0.3rem' }}>{n.time}</p>
+                          </div>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); dismissOne(n.id); }}
+                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', padding: '0.2rem', borderRadius: '6px', flexShrink: 0 }}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={styles.divider} className="mobile-hide" />
+
+            {user ? (
+              <div ref={profileRef} style={{ position: 'relative' }}>
+                <button 
+                  onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifications(false); }}
+                  style={styles.profileBtn}
+                >
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt={user.displayName} style={styles.avatar} />
+                  ) : (
+                    <div style={styles.avatarPlaceholder}>{user.displayName.charAt(0).toUpperCase()}</div>
+                  )}
+                  <div style={styles.userInfo}>
+                    <span style={styles.userName}>{user.displayName}</span>
+                    <span style={styles.userMajor}>{user.major || 'Student'}</span>
+                  </div>
+                  <ChevronDown size={16} color="var(--text-secondary)" style={{ transform: showProfileMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                </button>
+
+                {showProfileMenu && (
+                  <div style={styles.dropdown(isMobile)} className="glass-panel">
+                    <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '0.5rem' }}>
+                      <p style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff' }}>{user.displayName}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user.email}</p>
+                    </div>
+                    <button style={styles.dropdownItem}><User size={16} /> My Profile</button>
+                    <button style={styles.dropdownItem}><Settings size={16} /> Preferences</button>
+                    <div style={styles.dropdownDivider} />
+                    <button 
+                      onClick={() => { logout(); setShowProfileMenu(false); }}
+                      style={{ ...styles.dropdownItem, color: 'var(--danger-color)' }}
+                    >
+                      <LogOut size={16} /> Sign Out
+                    </button>
+                  </div>
                 )}
               </div>
-            </div>
-          )}
-        </div>
-
-        <div style={styles.divider} className="mobile-hide" />
-
-        {user ? (
-          <div ref={profileRef} style={{ position: 'relative' }}>
-            <button 
-              onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifications(false); }}
-              style={styles.profileBtn}
-            >
-              {user.photoURL ? (
-                <img src={user.photoURL} alt={user.displayName} style={styles.avatar} />
-              ) : (
-                <div style={styles.avatarPlaceholder}>{user.displayName.charAt(0).toUpperCase()}</div>
-              )}
-              <div style={styles.userInfo}>
-                <span style={styles.userName}>{user.displayName}</span>
-                <span style={styles.userMajor}>{user.major || 'Student'}</span>
-              </div>
-              <ChevronDown size={16} color="var(--text-secondary)" style={{ transform: showProfileMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-            </button>
-
-            {showProfileMenu && (
-              <div style={styles.dropdown(isMobile)} className="glass-panel">
-                <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '0.5rem' }}>
-                  <p style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff' }}>{user.displayName}</p>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user.email}</p>
-                </div>
-                <button style={styles.dropdownItem}><User size={16} /> My Profile</button>
-                <button style={styles.dropdownItem}><Settings size={16} /> Preferences</button>
-                <div style={styles.dropdownDivider} />
-                <button 
-                  onClick={() => { logout(); setShowProfileMenu(false); }}
-                  style={{ ...styles.dropdownItem, color: 'var(--danger-color)' }}
-                >
-                  <LogOut size={16} /> Sign Out
-                </button>
-              </div>
+            ) : (
+              <button 
+                onClick={() => setShowAuthModal(true)}
+                style={styles.authBtn}
+                className="primary-btn"
+              >
+                <LogIn size={18} />
+                <span>{isMobile ? 'Login' : 'Login / Sign Up'}</span>
+              </button>
             )}
           </div>
-        ) : (
-          <button 
-            onClick={() => setShowAuthModal(true)}
-            style={styles.authBtn}
-            className="primary-btn"
-          >
-            <LogIn size={18} />
-            <span>{isMobile ? 'Login' : 'Login / Sign Up'}</span>
-          </button>
-        )}
-      </div>
+        </>
+      )}
     </header>
   );
 };
 
 const styles = {
-  navbar: {
-    height: '70px',
+  navbar: (isMobile: boolean) => ({
+    height: isMobile ? 'auto' : '70px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '0 min(2rem, 4vw)',
-    margin: '1rem min(1rem, 2vw) 0 min(1rem, 2vw)',
+    padding: isMobile ? '16px' : '0 min(2rem, 4vw)',
+    margin: isMobile ? '16px' : '1rem min(1rem, 2vw) 0 min(1rem, 2vw)',
     borderRadius: '20px',
     zIndex: 100,
     background: 'rgba(15, 15, 20, 0.7)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     flexShrink: 0,
     gap: '0.5rem'
-  },
+  }),
   left: { flex: 1, display: 'flex', alignItems: 'center' },
   searchBox: (isMobile: boolean) => ({
     display: 'flex', alignItems: 'center', gap: '0.75rem',

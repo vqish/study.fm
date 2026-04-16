@@ -64,9 +64,9 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
         </div>
       )}
       
-      {!isFocusMode && (
-        <aside className="glass-panel app-sidebar">
-          <div style={styles.brand} className="mobile-hide brand-logo">
+      {!isFocusMode && !isMobile && (
+        <aside className="glass-panel" style={{ width: '88px', height: 'calc(100vh - 2rem)', margin: '1rem 0 1rem 1rem', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', paddingTop: '24px', paddingBottom: '24px', zIndex: 1000, flexShrink: 0, border: '1px solid var(--border-color)', background: 'var(--surface-color)', backdropFilter: 'blur(16px)' }}>
+          <div style={{ marginBottom: '2rem' }} className="mobile-hide brand-logo">
             <span style={{ fontWeight: 800, fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
               s<span style={{ color: 'var(--accent-color)' }}>.fm</span>
             </span>
@@ -85,7 +85,7 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
             <NavItem icon={<Settings />} label="Settings" active={activeSlide === 'settings'} onClick={() => setActiveSlide('settings')} />
           </nav>
 
-          <nav className="nav-menu" style={{ marginTop: 'auto' }}>
+          <nav className="nav-menu" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center', width: '100%', flex: 1, justifyContent: 'center' }}>
             <NavItem icon={<Target color={activeSlide === ('focus' as any) ? '#fff' : 'var(--accent-color)'} />} label="Focus Mode" active={activeSlide === ('focus' as any)} onClick={() => setActiveSlide('focus' as SlideId)} />
             {user && (
               <button onClick={logout} className="nav-btn logout-btn sidebar-icon-btn" title="Log Out">
@@ -104,6 +104,29 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
           </div>
         </main>
       </div>
+
+      {/* MOBILE BOTTOM NAV */}
+      {!isFocusMode && isMobile && (
+        <div style={{
+          position: 'fixed',
+          bottom: 0, left: 0, right: 0,
+          height: '70px',
+          background: 'rgba(15,15,22,0.85)',
+          backdropFilter: 'blur(20px)',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex',
+          justifyContent: 'space-around',
+          alignItems: 'center',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          zIndex: 2000
+        }}>
+          <BottomNavItem icon={<TimerIcon size={24} />} label="Timer" active={activeSlide === 'timer'} onClick={() => setActiveSlide('timer')} />
+          <BottomNavItem icon={<Music size={24} />} label="Music" active={activeSlide === 'media'} onClick={() => setActiveSlide('media')} />
+          <BottomNavItem icon={<BookOpen size={24} />} label="Planner" active={activeSlide === 'syllabus'} onClick={() => setActiveSlide('syllabus')} />
+          <BottomNavItem icon={<FileText size={24} />} label="Notes" active={activeSlide === 'notes'} onClick={() => setActiveSlide('notes')} />
+          <BottomNavItem icon={<Menu size={24} />} label="More" active={false} onClick={() => setShowMoreMenu(true)} />
+        </div>
+      )}
       <MiniPlayer activeSlide={activeSlide} setActiveSlide={setActiveSlide} />
 
       {/* Mobile More Menu */}
@@ -149,8 +172,16 @@ const NavItem = ({ icon, label, active, onClick, className = '' }: any) => (
     onClick={onClick}
     className={`nav-btn sidebar-icon-btn ${active ? 'active-nav' : ''} ${className}`}
     title={label}
+    style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '42px', height: '42px', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.3s', background: active ? 'var(--accent-color)' : 'transparent', color: active ? '#fff' : 'var(--text-secondary)' }}
   >
     {icon}
+  </button>
+);
+
+const BottomNavItem = ({ icon, label, active, onClick }: any) => (
+  <button onClick={onClick} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', border: 'none', background: 'transparent', color: active ? 'var(--accent-color)' : 'var(--text-secondary)', transition: 'color 0.2s', cursor: 'pointer' }}>
+    {icon}
+    <span style={{ fontSize: '10px', fontWeight: 600 }}>{label}</span>
   </button>
 );
 
