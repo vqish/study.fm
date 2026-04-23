@@ -119,7 +119,7 @@ export const Settings = () => {
         </div>
 
         {/* Settings Toggles */}
-        <div className="glass-panel" style={{ flex: 1.5, minWidth: '350px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="glass-panel" style={{ flex: 1, minWidth: '350px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <div>
             <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.2rem', marginBottom: '1.5rem', color: 'var(--accent-color)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}><Paintbrush size={20} /> Appearance</h4>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>

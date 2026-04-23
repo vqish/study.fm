@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Timer } from '../Timer/Timer';
 import { Quotes } from './Quotes';
-import { Minimize, Image as ImageIcon, Volume2, CloudRain, Music, Ghost, Library, Sunset } from 'lucide-react';
+import { Minimize, Image as ImageIcon, Volume2, CloudRain, Music as MusicIcon, Ghost, Library, Sunset } from 'lucide-react';
 import { MiniPlayer } from '../MusicPlayer/MiniPlayer';
+import { useMusic } from '../../contexts/MusicContext';
 import type { SlideId } from '../Layout/AppLayout';
 
 interface FocusModeProps {
@@ -28,96 +29,103 @@ export const FocusMode = ({
   activeSlide,
   setActiveSlide
 }: FocusModeProps) => {
+  const { stopMusic } = useMusic();
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
   const themes = [
     { name: 'None', icon: <Ghost size={16} />, type: null, url: null },
     { name: 'Rain', icon: <CloudRain size={16} />, type: 'youtube', url: 'mPZkdNFkNps' },
-    { name: 'Lo-Fi', icon: <Music size={16} />, type: 'youtube', url: 'jfKfPfyJRdk' },
+    { name: 'Lo-Fi', icon: <MusicIcon size={16} />, type: 'youtube', url: 'jfKfPfyJRdk' },
     { name: 'Library', icon: <Library size={16} />, type: 'youtube', url: 'HAt3vS5xPcs' },
     { name: 'Space', icon: <Sunset size={16} />, type: 'youtube', url: '4_E8E6s7X7A' },
   ];
 
+  const handleAtmosphere = (type: any, url: any) => {
+    if (type === 'youtube') stopMusic();
+    onAtmosphereChange(type, url);
+  };
+
   return (
     <div style={styles.container(isMobile)}>
+      <style>{`
         .focus-layout {
           display: grid;
-          grid-template-columns: 62% 38%;
-          gap: 2rem;
-          height: 100%;
+          grid-template-columns: 1fr 400px;
+          grid-template-rows: auto 1fr;
+          gap: 2.5rem;
+          height: 100vh;
           width: 100%;
           max-width: 1600px;
           margin: 0 auto;
-          padding: 32px;
+          padding: 40px;
           box-sizing: border-box;
           position: relative;
         }
         .focus-left {
+          grid-column: 1;
+          grid-row: 2;
           display: flex;
           align-items: center;
           justify-content: center;
+          min-height: 0;
         }
         .focus-right {
+          grid-column: 2;
+          grid-row: 2;
           display: flex;
           flex-direction: column;
-          justify-content: center;
           gap: 24px;
+          overflow-y: auto;
+          padding-right: 12px;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255,255,255,0.1) transparent;
         }
-        @media (max-width: 1440px) {
-          .focus-layout { grid-template-columns: 60% 40%; }
+        .focus-header {
+          grid-column: 1 / span 2;
+          display: flex;
+          justify-content: flex-end;
+        }
+        @media (max-width: 1200px) {
+          .focus-layout { grid-template-columns: 1fr 350px; padding: 24px; }
         }
         @media (max-width: 1024px) {
           .focus-layout { 
             grid-template-columns: 1fr; 
-            padding: 24px;
+            grid-template-rows: auto auto 1fr;
             overflow-y: auto;
           }
-          .focus-right { padding: 0; align-items: center; }
-        }
-        @media (max-width: 768px) {
-          .focus-layout { 
-            display: flex;
-            flex-direction: column;
-            padding: 16px; 
-            gap: 24px; 
-            overflow-y: auto;
-          }
-          .focus-right { width: 100%; align-items: stretch; justify-content: flex-start; }
-          .focus-left { margin-top: 60px; } /* Leave space for exit button on top */
+          .focus-left { grid-row: 2; margin: 40px 0; }
+          .focus-right { grid-row: 3; padding-right: 0; }
+          .focus-header { grid-row: 1; }
         }
       `}</style>
       
-      {/* 2. MAIN SPLIT LAYOUT */}
       <div className="focus-layout">
+        <div className="focus-header">
+          <button 
+            onClick={onExit}
+            style={styles.exitBtn(isMobile)}
+            className="hover-grow"
+          >
+            <Minimize size={20} /> Exit Focus
+          </button>
+        </div>
         
-        {/* 1. EXIT BUTTON - Top Right aligned to container */}
-        <button 
-          onClick={onExit}
-          style={styles.exitBtn(isMobile)}
-          className="hover-grow"
-        >
-          <Minimize size={20} /> Exit Focus
-        </button>
-        
-        {/* LEFT 60% - TIMER */}
         <div className="focus-left">
            <div style={styles.timerWrapper}>
               <Timer />
            </div>
         </div>
 
-        {/* RIGHT 38% - CONTROLS */}
         <div className="focus-right">
           <div style={styles.controlsStack(isMobile)}>
-            
-            {/* Atmosphere Card */}
             <div className="glass-panel" style={styles.card}>
               <h4 style={styles.cardHeader}>Atmosphere</h4>
               <div style={styles.themeGrid}>
                 {themes.map(t => (
                   <button 
                     key={t.name}
-                    onClick={() => onAtmosphereChange(t.type as any, t.url)} 
+                    onClick={() => handleAtmosphere(t.type as any, t.url)} 
                     style={styles.themeBtn}
                     className="hover-grow"
                   >
@@ -130,7 +138,7 @@ export const FocusMode = ({
               <div style={styles.divider} />
               
               <div style={styles.sliderRow}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                   <label style={styles.label}>Brightness</label>
                   <span style={styles.valueText}>{ambientBrightness}%</span>
                 </div>
@@ -160,16 +168,16 @@ export const FocusMode = ({
               </div>
             </div>
 
-            {/* Dynamic Quote Widget */}
             <div style={styles.quoteBox}>
               <Quotes />
             </div>
 
+            <div className="glass-panel" style={{ padding: '20px', borderRadius: '24px' }}>
+              <MiniPlayer activeSlide={activeSlide} setActiveSlide={setActiveSlide} />
+            </div>
           </div>
         </div>
       </div>
-
-      {/* 3. MOBILE OVERLAY CONTROLS (Floating if mobile) */}
       {isMobile && (
         <div style={styles.mobileTray}>
            {/* Add minimal mobile controls here if needed */}
@@ -219,7 +227,7 @@ const styles = {
     flexDirection: 'column' as const,
     gap: '24px',
     width: '100%',
-    maxWidth: isMobile ? '100%' : '500px',
+    maxWidth: '100%',
   }),
   card: {
     padding: '24px',
@@ -242,7 +250,7 @@ const styles = {
   },
   themeGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
     gap: '0.5rem'
   },
   themeBtn: {
@@ -273,9 +281,9 @@ const styles = {
   valueText: { fontSize: '0.8rem', color: 'var(--accent-color)', fontWeight: 800 },
   range: { width: '100%', accentColor: 'var(--accent-color)', cursor: 'pointer' },
   subHeader: { fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase' as const, letterSpacing: '1px', fontWeight: 800, marginBottom: '0.5rem' },
-  form: { display: 'flex', gap: '0.5rem' },
+  form: { display: 'flex', gap: '0.5rem', alignItems: 'stretch' },
   input: { flex: 1, padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '0.85rem', outline: 'none' },
-  btn: { padding: '0.75rem 1.25rem', borderRadius: '12px', fontSize: '0.85rem' },
+  btn: { padding: '0.75rem 1.25rem', borderRadius: '12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   quoteBox: {
     position: 'relative' as const,
     width: '100%'

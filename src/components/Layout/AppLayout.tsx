@@ -50,8 +50,8 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
         <div style={{ position: 'absolute', inset: 0, zIndex: -2, overflow: 'hidden', pointerEvents: 'none', animation: 'fadeIn 1s ease' }}>
           {bgData.type === 'youtube' ? (
              <iframe
-               src={`https://www.youtube.com/embed/${bgData.url}?autoplay=1&mute=1&controls=0&loop=1&playlist=${bgData.url}&modestbranding=1&iv_load_policy=3&rel=0`}
-               style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', minWidth: '100%', minHeight: '100%', width: '110vw', height: '110vh', objectFit: 'cover' }}
+               src={`https://www.youtube.com/embed/${bgData.url}?autoplay=1&mute=0&controls=0&loop=1&playlist=${bgData.url}&modestbranding=1&iv_load_policy=3&rel=0`}
+               style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', minWidth: '100%', minHeight: '100%', width: '115vw', height: '115vh', objectFit: 'cover', pointerEvents: 'none' }}
                allow="autoplay; encrypted-media"
                title="Ambient Backdrop"
              />
@@ -65,7 +65,7 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
       )}
       
       {!isFocusMode && !isMobile && (
-        <aside className="glass-panel" style={{ width: '88px', height: 'calc(100vh - 2rem)', margin: '1rem 0 1rem 1rem', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', paddingTop: '24px', paddingBottom: '24px', zIndex: 1000, flexShrink: 0, border: '1px solid var(--border-color)', background: 'var(--surface-color)', backdropFilter: 'blur(16px)' }}>
+        <aside className="app-sidebar glass-panel">
           <div style={{ marginBottom: '2rem' }} className="mobile-hide brand-logo">
             <span style={{ fontWeight: 800, fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
               s<span style={{ color: 'var(--accent-color)' }}>.fm</span>
@@ -85,7 +85,7 @@ export const AppLayout = ({ children, activeSlide, setActiveSlide }: {
             <NavItem icon={<Settings />} label="Settings" active={activeSlide === 'settings'} onClick={() => setActiveSlide('settings')} />
           </nav>
 
-          <nav className="nav-menu" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center', width: '100%', flex: 1, justifyContent: 'center' }}>
+          <nav className="nav-menu" style={{ marginTop: 'auto' }}>
             <NavItem icon={<Target color={activeSlide === ('focus' as any) ? '#fff' : 'var(--accent-color)'} />} label="Focus Mode" active={activeSlide === ('focus' as any)} onClick={() => setActiveSlide('focus' as SlideId)} />
             {user && (
               <button onClick={logout} className="nav-btn logout-btn sidebar-icon-btn" title="Log Out">

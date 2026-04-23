@@ -58,46 +58,56 @@ export const Timer = () => {
     }
   };
 
-  // Stable Interval Implementation
+  // Robust Timer Logic with persistence
   useEffect(() => {
     let interval: any = null;
     
-    // Pomodoro Timer
-    if (mode === 'pomodoro' && isPomoActive) {
+    if (isPomoActive || isCdActive || isSwActive) {
       interval = setInterval(() => {
-        setPomoTime((prev) => {
-          if (prev <= 1) {
-            setIsPomoActive(false);
-            handlePomoFinish();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } 
-    // Countdown Timer
-    else if (mode === 'countdown' && isCdActive) {
-      interval = setInterval(() => {
-        setCdTime((prev) => {
-          if (prev <= 1) {
-            setIsCdActive(false);
-            const totalElapsedMins = Math.ceil(((cdHoursInput * 3600) + (cdMinutesInput * 60) + cdSecondsInput) / 60);
-            saveCurrentSession(totalElapsedMins);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    // Stopwatch
-    else if (mode === 'stopwatch' && isSwActive) {
-      interval = setInterval(() => {
-        setSwTime(prev => prev + 1);
+        if (mode === 'pomodoro' && isPomoActive) {
+          setPomoTime(prev => {
+            if (prev <= 1) {
+              handlePomoFinish();
+              return 0;
+            }
+            return prev - 1;
+          });
+        } else if (mode === 'countdown' && isCdActive) {
+          setCdTime(prev => {
+            if (prev <= 1) {
+              setIsCdActive(false);
+              saveCurrentSession(Math.ceil(((cdHoursInput * 3600) + (cdMinutesInput * 60) + cdSecondsInput) / 60));
+              return 0;
+            }
+            return prev - 1;
+          });
+        } else if (mode === 'stopwatch' && isSwActive) {
+          setSwTime(prev => prev + 1);
+        }
       }, 1000);
     }
 
     return () => clearInterval(interval);
   }, [mode, isPomoActive, isCdActive, isSwActive]);
+
+  // Persistence
+  useEffect(() => {
+    const saved = localStorage.getItem('study_fm_timer');
+    if (saved) {
+      const { pomoTime: p, cdTime: c, swTime: s, lastUpdate } = JSON.parse(saved);
+      const elapsed = Math.floor((Date.now() - lastUpdate) / 1000);
+      
+      if (isPomoActive) setPomoTime(Math.max(0, p - elapsed));
+      if (isCdActive) setCdTime(Math.max(0, c - elapsed));
+      if (isSwActive) setSwTime(s + elapsed);
+    }
+  }, []);
+
+  useEffect(() => {
+    const state = { pomoTime, cdTime, swTime, lastUpdate: Date.now() };
+    localStorage.setItem('study_fm_timer', JSON.stringify(state));
+  }, [pomoTime, cdTime, swTime]);
+
 
   const handlePomoFinish = () => {
     if (pomoPhase === 'focus') {
@@ -215,7 +225,7 @@ export const Timer = () => {
         <div style={styles.controls}>
           {mode === 'pomodoro' ? (
             <button className="secondary-btn" onClick={() => setShowSettings(true)} style={styles.resetBtn}><SettingsIcon size={24} /></button>
-          ) : <div style={{ width: '70px' }} />}
+          ) : <div style={{ width: '56px' }} />}
 
           <button className="primary-btn" onClick={() => {
             if(mode==='pomodoro') setIsPomoActive(!isPomoActive);
@@ -242,7 +252,7 @@ export const Timer = () => {
         </div>
 
         {mode === 'pomodoro' && (
-          <div style={{ marginTop: '2.5rem' }}>
+          <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'center', width: '100%' }}>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', background: 'rgba(255,193,7,0.1)', padding: '0.4rem 1rem', borderRadius: '12px', color: '#FFC107', border: '1px solid rgba(255,193,7,0.2)' }}>
               Total sessions: <span style={{ color: '#fff' }}>{sessionsCompleted}</span>
             </div>
@@ -269,12 +279,12 @@ export const Timer = () => {
 };
 
 const styles = {
-  modeBtn: { padding: '0.6rem 1.4rem', borderRadius: '12px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.3s', border: 'none' },
+  modeBtn: { flex: 1, padding: '0.6rem 1.4rem', borderRadius: '12px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.3s', border: 'none', display: 'flex', justifyContent: 'center' },
   displayBoard: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', width: '100%' },
   topSection: { height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  subMode: { fontSize: '0.95rem', cursor: 'pointer', padding: '0.4rem 0.8rem', transition: 'all 0.2s', whiteSpace: 'nowrap' },
-  timeText: { fontWeight: 900, fontFamily: "'Outfit', sans-serif", letterSpacing: '-5px', color: '#fff', textShadow: '0 10px 40px rgba(0,0,0,0.5)', lineHeight: 1 },
-  controls: { display: 'flex', gap: '24px', alignItems: 'center', marginTop: '32px' },
+  subMode: { flex: 1, textAlign: 'center' as const, fontSize: '0.95rem', cursor: 'pointer', padding: '0.4rem 0.8rem', transition: 'all 0.2s', whiteSpace: 'nowrap' },
+  timeText: { fontWeight: 900, fontFamily: "'Outfit', sans-serif", letterSpacing: '-5px', color: '#fff', textShadow: '0 10px 40px rgba(0,0,0,0.5)', lineHeight: 1, display: 'flex', justifyContent: 'center' },
+  controls: { display: 'flex', gap: '24px', alignItems: 'center', marginTop: '32px', justifyContent: 'center' },
   actionBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '90px', width: '90px', height: '90px', borderRadius: '50%', boxShadow: '0 10px 30px rgba(187, 134, 252, 0.4)', transition: 'transform 0.2s', border: 'none' },
   resetBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', minWidth: '56px', width: '56px', height: '56px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', cursor: 'pointer' },
   timeInput: { fontSize: 'clamp(3rem, 10vw, 6rem)', fontWeight: 900, fontFamily: "'Outfit', sans-serif", background: 'transparent', border: 'none', color: '#fff', width: 'clamp(80px, 20vw, 130px)', textAlign: 'center' as const, outline: 'none', borderBottom: '2px solid rgba(255,255,255,0.1)' },

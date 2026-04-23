@@ -41,6 +41,7 @@ type AuthContextType = {
   showAuthModal: boolean;
   setShowAuthModal: (v: boolean) => void;
   updateSettings: (settings: Partial<UserSettings>) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);

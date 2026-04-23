@@ -91,9 +91,9 @@ export const AuthModal = ({ onClose }: { onClose: () => void }) => {
         </div>
 
         {/* Firebase Config Warning */}
-        {(import.meta.env.VITE_FIREBASE_API_KEY === 'your_api_key_here' || !import.meta.env.VITE_FIREBASE_API_KEY) && (
+        {(import.meta.env.VITE_FIREBASE_API_KEY === 'your_api_key_here' || !import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY === 'missing') && (
           <div style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', marginBottom: '1rem', fontSize: '0.82rem', color: '#ff8a8a', lineHeight: 1.5 }}>
-            ⚠️ <strong>Firebase not configured.</strong> Add your real API keys in <code style={{ background: 'rgba(255,255,255,0.1)', padding: '1px 4px', borderRadius: '4px' }}>.env</code> or Vercel environment variables. Login will not work until this is fixed.
+            ⚠️ <strong>Firebase Error:</strong> API Keys are missing. Please add them to your <code style={{ background: 'rgba(255,255,255,0.1)', padding: '1px 4px', borderRadius: '4px' }}>.env</code> file or Vercel Environment Variables.
           </div>
         )}
 
@@ -191,8 +191,20 @@ export const AuthModal = ({ onClose }: { onClose: () => void }) => {
             />
           </div>
 
+          {isLogin && (
+            <p 
+              style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', cursor: 'pointer', textAlign: 'right', marginTop: '-0.5rem' }}
+              onClick={async () => {
+                if (!email) { setError('Enter your email first'); return; }
+                try { await forgotPassword(email); setError('Reset email sent!'); } catch (err: any) { setError(err.message); }
+              }}
+            >
+              Forgot Password?
+            </p>
+          )}
+
           {error && (
-            <p style={{ color: 'var(--danger-color)', fontSize: '0.85rem', textAlign: 'center', marginTop: '0.25rem' }}>{error}</p>
+            <p style={{ color: error.includes('sent') ? 'var(--success-color)' : 'var(--danger-color)', fontSize: '0.85rem', textAlign: 'center', marginTop: '0.25rem' }}>{error}</p>
           )}
           
           <button type="submit" className="primary-btn" disabled={isLoading || isGoogleLoading} style={styles.submitBtn}>

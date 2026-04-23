@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Music, Pause, Play, Square, Volume2, Globe, Search, Plus } from 'lucide-react';
 import { useMusic } from '../../contexts/MusicContext';
 import { useAuth } from '../../contexts/AuthContext';
+import YouTube from 'react-youtube';
 
 export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
   const { user } = useAuth();
@@ -9,35 +10,16 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
   const [url, setUrl] = useState('');
 
   const parseYoutubeUrl = (inputUrl: string) => {
-    // Better regex for various youtube link formats
     const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
     const match = inputUrl.match(regExp);
     return (match && match[7].length === 11) ? match[7] : null;
   };
 
   const parseSpotifyUrl = (inputUrl: string): { type: string, id: string } | null => {
-    // Also matched episode, show
     const match = inputUrl.match(/open\.spotify\.com\/(playlist|track|album|artist|show|episode)\/([a-zA-Z0-9]+)/);
     if (match) return { type: match[1], id: match[2] };
     return null;
   };
-  const parseAppleMusicUrl = (inputUrl: string) => {
-    const match = inputUrl.match(/music\.apple\.com\/.*\/album\/.*\/([0-9]+)/);
-    return match ? match[1] : null;
-  };
-
-  let embedUrl = '';
-  if (activeTrack) {
-    if (activeTrack.type === 'youtube') {
-      embedUrl = `https://www.youtube.com/embed/${activeTrack.id}?autoplay=${isPlaying ? 1 : 0}&mute=0&rel=0&modestbranding=1&controls=1&showinfo=0`;
-    } else if (activeTrack.type === 'spotify') {
-      // Fix spotify URL construction to use the type extracted or stored in URL directly
-      const sType = activeTrack.url.includes('playlist') ? 'playlist' : activeTrack.url.includes('album') ? 'album' : activeTrack.url.includes('show') ? 'show' : activeTrack.url.includes('episode') ? 'episode' : 'track';
-      embedUrl = `https://open.spotify.com/embed/${sType}/${activeTrack.id}?utm_source=generator&theme=0`;
-    } else if (activeTrack.type === 'applemusic') {
-      embedUrl = `https://embed.music.apple.com/us/album/${activeTrack.id}`;
-    }
-  }
 
   const handleLoad = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,14 +39,7 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
       return;
     }
 
-    const amId = parseAppleMusicUrl(url);
-    if (amId) {
-      playTrack({ id: amId, type: 'applemusic', url, name: 'Apple Music Album', author: 'Apple' });
-      setUrl('');
-      return;
-    }
-
-    alert("Please paste a valid YouTube, Spotify, or Apple Music link.");
+    alert("Please paste a valid YouTube or Spotify link.");
   };
 
   const presets = [
@@ -74,7 +49,6 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
     { label: '🎹 Piano Study', id: '4oStw0rre78', type: 'youtube' as const },
     { label: '🌊 Ocean Waves', id: '77ZozI0rw7w', type: 'youtube' as const },
   ];
-
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', gap: '1.5rem', position: 'relative', overflow: 'hidden' }}>
@@ -88,10 +62,7 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
       )}
 
       <div style={{ display: 'flex', gap: '2rem', flex: 1, flexDirection: isFocus ? 'column' : 'row', overflow: 'hidden' }}>
-        
-        {/* Presets and Custom Input */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
           <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '16px' }}>
              <h4 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600, marginBottom: '1rem' }}>Load External Stream</h4>
              <form onSubmit={handleLoad} style={{ display: 'flex', gap: '0.5rem' }}>
@@ -119,24 +90,9 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
                 </button>
               ))}
             </div>
-
-            {user?.settings?.playlists?.length! > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '2rem' }}>
-                <h4 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>Recently Played</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {user?.settings?.playlists?.map((pl, idx) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <span style={{ fontSize: '0.85rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80%' }}>{pl}</span>
-                        <button onClick={() => { setUrl(pl); }} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer' }}><Play size={14} /></button>
-                      </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Main Video Section */}
         <div 
           className="glass-panel" 
           style={{ 
@@ -154,15 +110,41 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
         >
           {activeTrack ? (
             <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-               <iframe 
+              {activeTrack.type === 'youtube' ? (
+                <YouTube
+                  videoId={activeTrack.id}
+                  className="youtube-container"
+                  opts={{
+                    height: '100%',
+                    width: '100%',
+                    playerVars: {
+                      autoplay: isPlaying ? 1 : 0,
+                      mute: 0,
+                      rel: 0,
+                      modestbranding: 1,
+                      controls: 1,
+                      showinfo: 0,
+                    },
+                  }}
+                  onReady={(event) => {
+                    if (isPlaying) event.target.playVideo();
+                  }}
+                  style={{ width: '100%', height: '100%' }}
+                />
+              ) : (
+                <iframe 
                   width="100%" 
                   height="100%" 
-                  src={embedUrl}
+                  src={activeTrack.type === 'spotify' 
+                    ? `https://open.spotify.com/embed/playlist/${activeTrack.id}?utm_source=generator&theme=0`
+                    : `https://embed.music.apple.com/us/album/${activeTrack.id}`
+                  }
                   allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                   title="Study FM Media Engine"
                   style={{ border: 'none', background: 'transparent' }}
-               />
-               {!isPlaying && (
+                />
+              )}
+               {!isPlaying && activeTrack.type !== 'youtube' && (
                   <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }}>
                      <button onClick={() => playTrack(activeTrack)} style={{ ...styles.controlBtn, background: 'var(--accent-color)', width: '64px', height: '64px' }}>
                        <Play size={32} fill="#fff" />
@@ -183,6 +165,7 @@ export const MusicPlayer = ({ isFocus = false }: { isFocus?: boolean }) => {
         .music-pulse { animation: ${isPlaying ? 'pulse 2s infinite' : 'none'}; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         @keyframes eq { 0% { height: 10px; } 100% { height: 40px; } }
+        .youtube-container { width: 100%; height: 100%; }
       `}</style>
 
     </div>

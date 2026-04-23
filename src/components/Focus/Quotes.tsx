@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Quote, Edit3, Shuffle, EyeOff, Eye } from 'lucide-react';
-import { DraggableWidget } from '../Shared/DraggableWidget';
 
 const PREDEFINED_QUOTES = [
   "The secret to getting ahead is getting started.",
@@ -60,10 +59,10 @@ export const Quotes = () => {
   }
 
   return (
-    <DraggableWidget id="quotes-widget" initialPos={{ x: 40, y: 150 }}>
+    <>
       <div 
         style={{ 
-          width: '320px', 
+          width: '100%', 
           background: 'rgba(0,0,0,0.4)', 
           backdropFilter: 'blur(24px)', 
           border: '1px solid rgba(255,255,255,0.1)', 
@@ -75,7 +74,7 @@ export const Quotes = () => {
           boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
         }}
       >
-        <div className="drag-handle" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', cursor: 'grab' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
           <h3 style={{ fontSize: '0.8rem', color: 'var(--accent-color)', display: 'flex', alignItems: 'center', gap: '0.4rem', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 800 }}>
             <Quote size={12} /> Inspiration
           </h3>
@@ -105,17 +104,17 @@ export const Quotes = () => {
             </p>
             
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button onClick={nextRandomQuote} style={{ ...styles.actionBtn, padding: '0.35rem 0.75rem' }}>
+              <button onClick={nextRandomQuote} style={{ ...styles.actionBtn, flex: 1, padding: '0.6rem 0.75rem', justifyContent: 'center' }}>
                 <Shuffle size={12} /> Shuffle
               </button>
-              <button onClick={() => setIsEditing(true)} style={{ ...styles.actionBtn, padding: '0.35rem 0.75rem' }}>
+              <button onClick={() => setIsEditing(true)} style={{ ...styles.actionBtn, flex: 1, padding: '0.6rem 0.75rem', justifyContent: 'center' }}>
                 <Edit3 size={12} /> Custom
               </button>
             </div>
           </>
         )}
       </div>
-    </DraggableWidget>
+    </>
   );
 };
 
